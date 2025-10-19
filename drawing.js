@@ -160,6 +160,7 @@ const saveDocument = () => {
 	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
 	renderedContext.drawImage(canvas, 0, 0, renderedCanvas.width, renderedCanvas.height);
 	
+	
 	let allCharacters = [];
 	let dataStatements = [];
 	let lineNumber = 1000;
