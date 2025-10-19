@@ -105,13 +105,53 @@ const newDocument = () => {
 };
 
 const importImage = () => {
-	var image = new Image();
-	image.src = "lander.png";
-	image.onload = () => {
-		canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
-	};
+	// Trigger the hidden file input
+	const fileInput = document.getElementById('imageFileInput');
+	fileInput.click();
+};
 
-}
+const handleFileSelect = (event) => {
+	const file = event.target.files[0];
+	
+	if (!file) {
+		return;
+	}
+	
+	// Check if it's an image
+	if (!file.type.startsWith('image/')) {
+		alert('Please select an image file');
+		return;
+	}
+	
+	// Create object URL from the file
+	const imageUrl = URL.createObjectURL(file);
+	
+	// Create image and wait for it to load
+	const image = new Image();
+	
+	image.onload = () => {
+		// Draw the image scaled to the canvas
+		canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+		
+		// Clean up the object URL
+		URL.revokeObjectURL(imageUrl);
+		
+		console.log('Image imported successfully');
+		
+		// Reset the file input so the same file can be selected again
+		event.target.value = '';
+	};
+	
+	image.onerror = () => {
+		console.error('Failed to load image');
+		URL.revokeObjectURL(imageUrl);
+		alert('Failed to load image');
+		event.target.value = '';
+	};
+	
+	// Set the source to trigger loading
+	image.src = imageUrl;
+};
 
 const saveDocument = () => {
 	let row, col, charRow;
