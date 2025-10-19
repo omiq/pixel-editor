@@ -1,0 +1,51 @@
+<html>
+
+<head>
+    <title>Pixel Drawing Version 1.8</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script type="text/javascript" src="ntc.js"></script>
+
+    <script type="text/javascript" src="drawing.js"></script>
+</head>
+    <body onload="init()">
+        <div style="margin: auto; ">
+
+            <div style="width: 640px; margin-right: 40px;border:2px solid #eeeeee; float: left;display:block; background-color: white;">
+                <canvas id="drawingCanvas" width="640" height="640"></canvas>
+                <!-- <canvas id="zoomcanvas" width="900" height="900" style="visibility: hidden;display:none;"></canvas> -->
+            </div>
+
+            <div style="width: 50%;  display:block; float: right; width: 100px;"></div>
+
+
+                <div id="palette" style="min-width:200px;max-width:1000px;display:block;">
+                    
+                    <div>
+                        <input type="text" name="X" id="x" value="0" readonly style="width: 30px;">
+                        <input type="text" name="Y" id="y" value="0" readonly style="width: 30px;">
+                        <label for="x">X</label>
+                        <label for="y">Y</label>
+                    </div>
+                    <p style="font-family: arial;">Eraser</p>
+                    <div style="display:inline-block ;width:60px;height:60px;background:white;border:2px solid black;" id="white" onclick="changeColour(this)"></div>
+                    <p style="font-family: arial;">Colour Palette</p>
+                    <div id="paletteButtons"></div>
+                </div>
+
+                <div id="buttons" style="min-width:200px;max-width:400px;display:block;">
+                <span style="clear: right;overflow: auto;display: table;content: ''; height: 120px;"><p>&nbsp;</p></span>
+                    <input type="button" value="Save Drawing" id="btn" size="30" onclick="saveDocument()" style="">
+                    <input type="button" value="New Drawing" id="clr" size="23" onclick="newDocument()" style="">
+                </div>
+            </div>
+
+            <!-- <div id="instructionsArea" style="clear: both;overflow: auto; ">
+                <div id="header" style="color: black; font-family: Arial, Helvetica, sans-serif;"></div>
+                <img id="canvasBitmap" style="display:none;">
+                <div id="instructions" style="color: darkblue; font-family: Arial, Helvetica, sans-serif;"></div>
+            </div> -->
+         </div>
+    </body>
+    </html>
