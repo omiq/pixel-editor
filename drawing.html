@@ -9,9 +9,14 @@
 </head>
     <body onload="init()">
         <div style="margin: auto; ">
+            <div id="buttons" style="min-width:200px;max-width:400px;display:block;">
+                <input type="button" value="Save Drawing" id="btn" size="30" onclick="saveDocument()" style="">
+                <input type="button" value="New Drawing" id="clr" size="23" onclick="newDocument()" style="">
+            </div>
 
             <div style="width: 640px; margin-right: 40px;border:2px solid #eeeeee; float: left;display:block; background-color: white;">
                 <canvas id="drawingCanvas" width="640" height="640"></canvas>
+                <canvas id="64x64" width="64" height="64"></canvas>
             </div>
 
             <div style="width: 50%;  display:block; float: right; width: 100px;"></div>
@@ -24,17 +29,15 @@
                         <input type="text" name="Y" id="y" value="0" readonly style="width: 30px;">
                         <label for="x">X</label>
                         <label for="y">Y</label>
-                    </div>
-                    <p style="font-family: arial;">Eraser</p>
-                    <div style="display:inline-block ;width:60px;height:60px;background:white;border:2px solid black;" id="white" onclick="changeColour(this)"></div>
-                    <p style="font-family: arial;">Colour Palette</p>
-                    <div id="paletteButtons"></div>
-                </div>
 
-                <div id="buttons" style="min-width:200px;max-width:400px;display:block;">
-                <span style="clear: right;overflow: auto;display: table;content: ''; height: 120px;"><p>&nbsp;</p></span>
-                    <input type="button" value="Save Drawing" id="btn" size="30" onclick="saveDocument()" style="">
-                    <input type="button" value="New Drawing" id="clr" size="23" onclick="newDocument()" style="">
+                    </div>
+                    <!-- <p style="font-family: arial;">Eraser</p>
+                    <div style="display:inline-block ;width:60px;height:60px;background:white;border:2px solid black;" id="white" onclick="changeColour(this)"></div>
+                    <p style="font-family: arial;">Colour Palette</p> 
+                    <div id="paletteButtons"></div> -->
+                
+
+                    
                 </div>
             </div>
 

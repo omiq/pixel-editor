@@ -53,12 +53,12 @@ const blank = () => {
 	let colourName, colourButton, x, y;
 
 	const palette = document.getElementById("paletteButtons");
-	palette.innerHTML="";
+	// palette.innerHTML="";
 
-	for ( colourName in colourPalette ) {
-		colourButton = '<div style="display:inline-block ;width:60px;height:60px;background:' + colourPalette[colourName] +';" id="' + colourName +'" onclick="changeColour(this)"></div>';
-		palette.innerHTML+=colourButton;
-	}
+	// for ( colourName in colourPalette ) {
+	// 	colourButton = '<div style="display:inline-block ;width:60px;height:60px;background:' + colourPalette[colourName] +';" id="' + colourName +'" onclick="changeColour(this)"></div>';
+	// 	palette.innerHTML+=colourButton;
+	// }
 
 	penColour = "#eeeeee";
 
@@ -95,7 +95,27 @@ const newDocument = () => {
 };
 
 const saveDocument = () => {
-	let row, col;
+	let row, col, charRow, charCol;
+	let renderedCanvas = document.getElementById("64x64");
+	let renderedContext = renderedCanvas.getContext("2d");
+	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
+	renderedContext.drawImage(canvas, 0, 0, renderedCanvas.width, renderedCanvas.height);
+	let data = [];
+	for(row=0; row<8; row++) {
+		for(col=0; col<8; col++) {
+			console.log(col,row);
+			for(charRow=0; charRow<8; charRow++) {
+				
+					var imageData = renderedContext.getImageData(col, charRow, 8, 1);
+					data.push(imageData);
+					if (!imageData==0) console.log({ imageData });
+				}
+			}
+			
+
+		}
+	
+
 };
 
 
