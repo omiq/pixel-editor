@@ -50,26 +50,14 @@ const changeColour = (obj) => {
 };
 
 const blank = () => {
-	let colourName, colourButton, x, y;
-
-	const palette = document.getElementById("paletteButtons");
-	// palette.innerHTML="";
-
-	// for ( colourName in colourPalette ) {
-	// 	colourButton = '<div style="display:inline-block ;width:60px;height:60px;background:' + colourPalette[colourName] +';" id="' + colourName +'" onclick="changeColour(this)"></div>';
-	// 	palette.innerHTML+=colourButton;
-	// }
-
-	penColour = "#eeeeee";
+	let colourName, colourButton, x, y,darkPenColour;
 
 	canvasContext.fillStyle   = "#ffffff";
 	canvasContext.strokeStyle = penColour;
-
 	canvasContext.clearRect(0, 0, w, h);
-
-	// document.getElementById("canvasBitmap").style.display = "none";
-
 	canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+	penColour = "#eeeeee";
+	canvasContext.strokeStyle = penColour;
 
 	for (x = 0; x <= w; x += pixelSize) {
 		canvasContext.moveTo(x, 0);
@@ -80,10 +68,41 @@ const blank = () => {
 			canvasContext.lineTo(w, y);
 		}
 	}
-	canvasContext.stroke();
 
-	// document.getElementById("instructions").innerHTML = "<p>";
-	// document.getElementById("header").innerHTML = "<h1></h1>";
+	var unit = pixelSize*8;
+	canvasContext.stroke();
+	darkPenColour = "#AAAAAA";
+	canvasContext.strokeStyle = darkPenColour;
+
+	for (x = unit; x <=(w-unit); x +=unit) {
+		canvasContext.beginPath();
+		canvasContext.moveTo(x, 0);
+		canvasContext.lineTo(x, h);	
+		canvasContext.closePath();
+		canvasContext.stroke();
+	}
+
+	for (y = unit; y <=(h-unit); y +=unit) {
+		canvasContext.beginPath();
+		canvasContext.moveTo(0, y);
+		canvasContext.lineTo(w, y);	
+		canvasContext.closePath();
+		canvasContext.stroke();
+	}
+
+
+	// for (y = 0; y <= h-(h/8); y +=(h/8)) {
+		
+	// 	for (x = 0; x <= w-(w/8); x +=(x/8)) {
+
+	// 	
+	// 		canvasContext.moveTo(x, y);
+	// 		canvasContext.lineTo(x+(x/8), y+(y/8));			
+				
+	// 	}
+	// }
+
+	canvasContext.stroke();
 	penColour = "#000000";
 };
 
@@ -97,7 +116,7 @@ const newDocument = () => {
 const saveDocument = () => {
 	let row, col, charRow;
 	let renderedCanvas = document.getElementById("64x64");
-	let renderedContext = renderedCanvas.getContext("2d");
+	let renderedContext = renderedCanvas.getContext("2d", { willReadFrequently: true });
 	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
 	renderedContext.drawImage(canvas, 0, 0, renderedCanvas.width, renderedCanvas.height);
 	
