@@ -95,27 +95,63 @@ const newDocument = () => {
 };
 
 const saveDocument = () => {
-	let row, col, charRow, charCol;
+	let row, col, charRow;
 	let renderedCanvas = document.getElementById("64x64");
 	let renderedContext = renderedCanvas.getContext("2d");
 	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
 	renderedContext.drawImage(canvas, 0, 0, renderedCanvas.width, renderedCanvas.height);
-	let data = [];
+	
+	let allCharacters = [];
+	let dataStatements = [];
+	let lineNumber = 1000;
+	
+	// Loop through each 8x8 character in the 64x64 grid
 	for(row=0; row<8; row++) {
 		for(col=0; col<8; col++) {
-			console.log(col,row);
+			let charData = [];
+			console.log(`Character at col=${col}, row=${row}`);
+			
+			// Get 8 rows of 8 pixels for this character
 			for(charRow=0; charRow<8; charRow++) {
+				// Get one row of 8 pixels for this character
+				let imageData = renderedContext.getImageData(col*8, row*8 + charRow, 8, 1);
 				
-					var imageData = renderedContext.getImageData(col, charRow, 8, 1);
-					data.push(imageData);
-					if (!imageData==0) console.log({ imageData });
+				// Convert 8 pixels to a single byte value (0-255)
+				let byteValue = 0;
+				for(let pixel = 0; pixel < 8; pixel++) {
+					let pixelIndex = pixel * 4; // RGBA, so 4 values per pixel
+					let r = imageData.data[pixelIndex];
+					let g = imageData.data[pixelIndex + 1];
+					let b = imageData.data[pixelIndex + 2];
+					
+					// Calculate luminance
+					let luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+					
+					// If pixel is dark (below threshold), set the bit
+					if (luminance < 128) {
+						byteValue |= (1 << (7 - pixel)); // Set bit from left to right
+					}
 				}
+				
+				charData.push(byteValue);
 			}
 			
-
+			allCharacters.push(charData);
+			
+			// Create DATA statement for C64 BASIC
+			let dataLine = `${lineNumber} DATA ${charData.join(',')}`;
+			dataStatements.push(dataLine);
+			lineNumber += 10;
+			
+			console.log(dataLine);
 		}
+	}
 	
-
+	// Output all DATA statements
+	console.log('\n=== C64 BASIC DATA Statements ===');
+	console.log(dataStatements.join('\n'));
+	
+	return { characters: allCharacters, dataStatements: dataStatements };
 };
 
 
