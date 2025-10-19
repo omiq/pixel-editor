@@ -91,16 +91,7 @@ const blank = () => {
 	}
 
 
-	// for (y = 0; y <= h-(h/8); y +=(h/8)) {
-		
-	// 	for (x = 0; x <= w-(w/8); x +=(x/8)) {
 
-	// 	
-	// 		canvasContext.moveTo(x, y);
-	// 		canvasContext.lineTo(x+(x/8), y+(y/8));			
-				
-	// 	}
-	// }
 
 	canvasContext.stroke();
 	penColour = "#000000";
@@ -112,6 +103,15 @@ const newDocument = () => {
 		blank();
 	}
 };
+
+const importImage = () => {
+	var image = new Image();
+	image.src = "lander.png";
+	image.onload = () => {
+		canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+	};
+
+}
 
 const saveDocument = () => {
 	let row, col, charRow;
