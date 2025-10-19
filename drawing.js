@@ -109,7 +109,7 @@ const saveDocument = () => {
 	for(row=0; row<8; row++) {
 		for(col=0; col<8; col++) {
 			let charData = [];
-			console.log(`Character at col=${col}, row=${row}`);
+			// console.log(`Character at col=${col}, row=${row}`);
 			
 			// Get 8 rows of 8 pixels for this character
 			for(charRow=0; charRow<8; charRow++) {
@@ -143,7 +143,7 @@ const saveDocument = () => {
 			dataStatements.push(dataLine);
 			lineNumber += 10;
 			
-			console.log(dataLine);
+			// console.log(dataLine);
 		}
 	}
 	
