@@ -209,6 +209,47 @@ const handleFileSelect = (event) => {
 	image.src = imageUrl;
 };
 
+const downloadDrawing = () => {
+	// Create a temporary canvas for the clean 64x64 output
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = 64;
+	tempCanvas.height = 64;
+	const tempContext = tempCanvas.getContext('2d');
+	
+	// Fill with white background
+	tempContext.fillStyle = "white";
+	tempContext.fillRect(0, 0, 64, 64);
+	
+	// Read logical pixels and render them cleanly to 64x64 canvas (without grid lines)
+	const gridSize = 64; // Always 64x64 logical pixels
+	
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			// Sample the center of each logical pixel to get its color
+			const imageData = canvasContext.getImageData(
+				px * pixelSize + Math.floor(pixelSize / 2),
+				py * pixelSize + Math.floor(pixelSize / 2),
+				1, 1
+			);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			// Draw the pixel to the temp canvas
+			tempContext.fillStyle = rgbHex(r, g, b);
+			tempContext.fillRect(px, py, 1, 1);
+		}
+	}
+	
+	// Download the canvas as PNG
+	const canvasUrl = tempCanvas.toDataURL('image/png');
+	const createEl = document.createElement('a');
+	createEl.href = canvasUrl;
+	createEl.download = "drawing_" + Date.now() + ".png";
+	createEl.click();
+	createEl.remove();
+};
+
 const saveDocument = () => {
 
 

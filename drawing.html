@@ -10,7 +10,8 @@
     <body onload="init()">
         <div style="margin: auto; ">
             <div id="buttons" style="min-width:200px;max-width:400px;display:block;">
-                <input type="button" value="Save Drawing" id="btn" size="30" onclick="saveDocument()" style="">
+                <input type="button" value="Download Image" id="downloadImage" size="30" onclick="downloadDrawing()" style="">
+                <input type="button" value="Export Drawing Data" id="btn" size="30" onclick="saveDocument()" style="">
                 <input type="button" value="New Drawing" id="clr" size="23" onclick="newDocument()" style="">
                 <input type="button" value="Import" id="load" size="23" onclick="importImage()" style="">
                 <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
