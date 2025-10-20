@@ -100,7 +100,7 @@ const changeZoom = (newPixelSize) => {
 		for (let px = 0; px < gridSize; px++) {
 			if (pixelData[py][px]) {
 				canvasContext.fillStyle = pixelData[py][px];
-				canvasContext.fillRect(px * pixelSize + 1, py * pixelSize + 1, pixelSize - 1, pixelSize - 1);
+				canvasContext.fillRect(px * pixelSize + 1, py * pixelSize + 1, pixelSize - 2, pixelSize - 2);
 			}
 		}
 	}
@@ -113,44 +113,42 @@ const blank = () => {
 	canvasContext.strokeStyle = penColour;
 	canvasContext.clearRect(0, 0, w, h);
 	canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+	
+	// Draw light grid lines (every pixel)
 	penColour = "#eeeeee";
 	canvasContext.strokeStyle = penColour;
-
+	canvasContext.lineWidth = 1;
+	canvasContext.beginPath();
+	
 	for (x = 0; x <= w; x += pixelSize) {
 		canvasContext.moveTo(x, 0);
 		canvasContext.lineTo(x, h);
-
-		for (y = 0; y <= h; y += pixelSize) {
-			canvasContext.moveTo(0, y);
-			canvasContext.lineTo(w, y);
-		}
 	}
-
-	var unit = pixelSize*8;
+	
+	for (y = 0; y <= h; y += pixelSize) {
+		canvasContext.moveTo(0, y);
+		canvasContext.lineTo(w, y);
+	}
+	
 	canvasContext.stroke();
+
+	// Draw darker grid lines (every 8 pixels)
+	var unit = pixelSize*8;
 	darkPenColour = "#AAAAAA";
 	canvasContext.strokeStyle = darkPenColour;
 	canvasContext.lineWidth = 1;
+	canvasContext.beginPath();
 
-	for (x = 0; x <= w; x +=unit) {
-		canvasContext.beginPath();
+	for (x = 0; x <= w; x += unit) {
 		canvasContext.moveTo(x, 0);
 		canvasContext.lineTo(x, h);	
-		canvasContext.closePath();
-		canvasContext.stroke();
 	}
 
-	for (y = 0; y <= h; y +=unit) {
-		canvasContext.beginPath();
+	for (y = 0; y <= h; y += unit) {
 		canvasContext.moveTo(0, y);
 		canvasContext.lineTo(w, y);	
-		canvasContext.closePath();
-		canvasContext.stroke();
 	}
-
-
-
-
+	
 	canvasContext.stroke();
 	penColour = "#000000";
 };
@@ -212,6 +210,9 @@ const handleFileSelect = (event) => {
 };
 
 const saveDocument = () => {
+
+
+	let name = 'drawing_' + Date.now();
 	let row, col, charRow;
 	let renderedCanvas = document.getElementById("64x64");
 	let renderedContext = renderedCanvas.getContext("2d", { willReadFrequently: true });
@@ -291,8 +292,18 @@ const saveDocument = () => {
 	
 	// Output all DATA statements
 	console.log('\n=== C64 BASIC DATA Statements ===');
-	console.log(dataStatements.join('\n'));
 	
+	var exportData = dataStatements.join('\n');
+	console.log(exportData);
+	  
+	// Download the data statements as a text file
+	var tempLink = document.createElement("a");
+	var taBlob = new Blob([exportData], {type: 'text/plain'});
+	tempLink.setAttribute('href', URL.createObjectURL(taBlob));
+	tempLink.setAttribute('download', `${name.toLowerCase()}.txt`);
+	tempLink.click();
+	URL.revokeObjectURL(tempLink.href);
+
 	return { characters: allCharacters, dataStatements: dataStatements };
 };
 
@@ -364,11 +375,11 @@ const mouseControl = (e, eventType) => {
 		if ( penColour === "white" || e.button === 2 ) {
 			// Erase - fill with white within the grid boundaries
 			canvasContext.fillStyle = "white";
-			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 1, pixelSize - 1);
+			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
 		} else {
 			// Draw - fill with color within the grid boundaries
 			canvasContext.fillStyle = penColour;
-			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 1, pixelSize - 1);
+			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
 		}
 	}
 };
