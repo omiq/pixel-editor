@@ -16,9 +16,9 @@
                 <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
             </div>
 
-            <div style="width: 640px; margin-right: 40px;border:2px solid #eeeeee; float: left;display:block; background-color: white;">
-                <canvas id="drawingCanvas" width="640" height="640"></canvas>
-                <canvas id="64x64" width="64" height="64"></canvas>
+            <div id="canvasContainer" style="width: 640px; height: 640px; margin-right: 40px;border:2px solid #eeeeee; float: left;display:block; background-color: white; overflow: auto; position: relative;">
+                <canvas id="drawingCanvas" width="640" height="640" style="cursor: crosshair;"></canvas>
+                <canvas id="64x64" width="64" height="64" style="display: none;"></canvas>
             </div>
 
             <div style="width: 50%;  display:block; float: right; width: 100px;"></div>
@@ -32,6 +32,17 @@
                         <label for="x">X</label>
                         <label for="y">Y</label>
 
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label for="zoomLevel">Zoom Level:</label>
+                        <select id="zoomLevel" onchange="changeZoom(this.value)" style="margin-left: 5px;">
+                            <option value="5">5x (Small)</option>
+                            <option value="8">8x</option>
+                            <option value="10" selected>10x (Default)</option>
+                            <option value="12">12x</option>
+                            <option value="16">16x</option>
+                            <option value="20">20x (Large)</option>
+                        </select>
                     </div>
                     <!-- <p style="font-family: arial;">Eraser</p>
                     <div style="display:inline-block ;width:60px;height:60px;background:white;border:2px solid black;" id="white" onclick="changeColour(this)"></div>

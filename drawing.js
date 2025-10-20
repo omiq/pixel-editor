@@ -1,9 +1,14 @@
-let canvas, canvasContext, w, h;
+let canvas, canvasContext, canvasContainer, w, h;
 let mouseX          = 0;
 let mouseY          = 0;
 let penColour       = "#eeeeee";
 let prevColour      = penColour;
 let pixelSize       = 10;
+let isPanning       = false;
+let panStartX       = 0;
+let panStartY       = 0;
+let scrollStartX    = 0;
+let scrollStartY    = 0;
 
 const colourPalette = {
 	"Red": "#ff0000",
@@ -49,6 +54,58 @@ const changeColour = (obj) => {
 	penColour = colourPalette[obj.id] || obj.id;
 };
 
+const changeZoom = (newPixelSize) => {
+	// Store the current pixel data before changing zoom (always 64x64 logical pixels)
+	const gridSize = 64;
+	const pixelData = [];
+	
+	// Read each logical pixel's color
+	for (let py = 0; py < gridSize; py++) {
+		pixelData[py] = [];
+		for (let px = 0; px < gridSize; px++) {
+			// Sample the center of each pixel to get its color
+			const imageData = canvasContext.getImageData(
+				px * pixelSize + Math.floor(pixelSize / 2),
+				py * pixelSize + Math.floor(pixelSize / 2),
+				1, 1
+			);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			// Check if it's a filled pixel (not white/background)
+			if (r < 250 || g < 250 || b < 250) {
+				pixelData[py][px] = rgbHex(r, g, b);
+			} else {
+				pixelData[py][px] = null; // Background
+			}
+		}
+	}
+	
+	// Update pixel size
+	pixelSize = parseInt(newPixelSize);
+	
+	// Resize canvas to fit 64x64 logical pixels at new zoom
+	const newSize = 64 * pixelSize;
+	canvas.width = newSize;
+	canvas.height = newSize;
+	w = canvas.width;
+	h = canvas.height;
+	
+	// Redraw grid
+	blank();
+	
+	// Redraw all the pixels at the new size (within grid boundaries)
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			if (pixelData[py][px]) {
+				canvasContext.fillStyle = pixelData[py][px];
+				canvasContext.fillRect(px * pixelSize + 1, py * pixelSize + 1, pixelSize - 1, pixelSize - 1);
+			}
+		}
+	}
+};
+
 const blank = () => {
 	let colourName, colourButton, x, y,darkPenColour;
 
@@ -73,8 +130,9 @@ const blank = () => {
 	canvasContext.stroke();
 	darkPenColour = "#AAAAAA";
 	canvasContext.strokeStyle = darkPenColour;
+	canvasContext.lineWidth = 1;
 
-	for (x = unit; x <=(w-unit); x +=unit) {
+	for (x = 0; x <= w; x +=unit) {
 		canvasContext.beginPath();
 		canvasContext.moveTo(x, 0);
 		canvasContext.lineTo(x, h);	
@@ -82,7 +140,7 @@ const blank = () => {
 		canvasContext.stroke();
 	}
 
-	for (y = unit; y <=(h-unit); y +=unit) {
+	for (y = 0; y <= h; y +=unit) {
 		canvasContext.beginPath();
 		canvasContext.moveTo(0, y);
 		canvasContext.lineTo(w, y);	
@@ -158,7 +216,31 @@ const saveDocument = () => {
 	let renderedCanvas = document.getElementById("64x64");
 	let renderedContext = renderedCanvas.getContext("2d", { willReadFrequently: true });
 	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
-	renderedContext.drawImage(canvas, 0, 0, renderedCanvas.width, renderedCanvas.height);
+	
+	// Fill with white background
+	renderedContext.fillStyle = "white";
+	renderedContext.fillRect(0, 0, renderedCanvas.width, renderedCanvas.height);
+	
+	// Read logical pixels and render them cleanly to 64x64 canvas (without grid lines)
+	const gridSize = 64; // Always 64x64 logical pixels
+	
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			// Sample the center of each logical pixel to get its color
+			const imageData = canvasContext.getImageData(
+				px * pixelSize + Math.floor(pixelSize / 2),
+				py * pixelSize + Math.floor(pixelSize / 2),
+				1, 1
+			);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			// Draw the pixel to the rendered canvas
+			renderedContext.fillStyle = rgbHex(r, g, b);
+			renderedContext.fillRect(px, py, 1, 1);
+		}
+	}
 	
 	
 	let allCharacters = [];
@@ -217,6 +299,32 @@ const saveDocument = () => {
 
 // mouse drawing routine
 const mouseControl = (e, eventType) => {
+	
+	// Handle middle mouse button panning
+	if (e.button === 1 || isPanning) {
+		if (eventType === "down") {
+			isPanning = true;
+			panStartX = e.clientX;
+			panStartY = e.clientY;
+			scrollStartX = canvasContainer.scrollLeft;
+			scrollStartY = canvasContainer.scrollTop;
+			canvas.style.cursor = "grabbing";
+			e.preventDefault();
+			return;
+		} else if (eventType === "move" && isPanning) {
+			const deltaX = panStartX - e.clientX;
+			const deltaY = panStartY - e.clientY;
+			canvasContainer.scrollLeft = scrollStartX + deltaX;
+			canvasContainer.scrollTop = scrollStartY + deltaY;
+			e.preventDefault();
+			return;
+		} else if (eventType === "up") {
+			isPanning = false;
+			canvas.style.cursor = "crosshair";
+			e.preventDefault();
+			return;
+		}
+	}
 
 	var xField = document.getElementById("x");
 	var yField = document.getElementById("y");
@@ -245,28 +353,22 @@ const mouseControl = (e, eventType) => {
 	}
 
 
-	// Get the mouse coords relative to canvas
-	mouseX = parseInt((e.clientX - canvas.offsetLeft) / pixelSize);
-	mouseY = parseInt((e.clientY - canvas.offsetTop) / pixelSize);
+	// Get the mouse coords relative to canvas (accounting for scroll position)
+	const rect = canvas.getBoundingClientRect();
+	mouseX = parseInt((e.clientX - rect.left) / pixelSize);
+	mouseY = parseInt((e.clientY - rect.top) / pixelSize);
 
 
 	if( mouseControl.isDrawing ) {
-		// If using eraser then need to reapply the grid lines.
+		// Draw within the grid lines so they are never overwritten
 		if ( penColour === "white" || e.button === 2 ) {
-			canvasContext.lineWidth = 1;
-			canvasContext.strokeStyle = "#eeeeee";
+			// Erase - fill with white within the grid boundaries
 			canvasContext.fillStyle = "white";
-			canvasContext.beginPath();
-			canvasContext.fillRect((mouseX * pixelSize), (mouseY * pixelSize), pixelSize-1, pixelSize-1);
-			canvasContext.strokeRect((mouseX * pixelSize), (mouseY * pixelSize), pixelSize, pixelSize);
-			canvasContext.closePath();
+			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 1, pixelSize - 1);
 		} else {
-			canvasContext.lineWidth = 1;
-			canvasContext.strokeStyle = penColour;
+			// Draw - fill with color within the grid boundaries
 			canvasContext.fillStyle = penColour;
-			canvasContext.beginPath();
-			canvasContext.fillRect((mouseX * pixelSize), (mouseY * pixelSize), pixelSize-1, pixelSize-1);
-			canvasContext.closePath();
+			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 1, pixelSize - 1);
 		}
 	}
 };
@@ -278,6 +380,8 @@ const init = () => {
 
 	mouseControl.isDrawing = false;
 	canvas = document.getElementById('drawingCanvas');
+	canvasContainer = document.getElementById('canvasContainer');
+	
 	canvas.addEventListener('contextmenu', function(e) {
 		if ( parseInt( e.button ) === 2 ) {
 			// Block right-click menu thru preventing default action.
@@ -287,7 +391,15 @@ const init = () => {
 			penColour = "white";
 		}
 	});
-	canvasContext = canvas.getContext("2d");
+	
+	// Prevent default middle mouse button behavior
+	canvas.addEventListener('mousedown', function(e) {
+		if (e.button === 1) {
+			e.preventDefault();
+		}
+	});
+	
+	canvasContext = canvas.getContext("2d", { willReadFrequently: true });
 	canvasContext.globalAlpha = 1;
 
 	canvasContext.fillStyle = "white";
