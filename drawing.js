@@ -1,4 +1,4 @@
-let canvas, canvasContext, canvasContainer, w, h;
+let canvas, canvasContext, canvasContainer, previewCanvas, previewContext, w, h;
 let mouseX          = 0;
 let mouseY          = 0;
 let penColour       = "#eeeeee";
@@ -55,6 +55,74 @@ const changeColour = (obj) => {
 	penColour = colourPalette[obj.id] || obj.id;
 };
 
+const updatePreview = () => {
+	// Clear preview canvas
+	previewContext.fillStyle = "white";
+	previewContext.fillRect(0, 0, gridSize, gridSize);
+	
+	// Read logical pixels and render them to preview canvas
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			// Sample the center of each logical pixel to get its color
+			const imageData = canvasContext.getImageData(
+				px * pixelSize + Math.floor(pixelSize / 2),
+				py * pixelSize + Math.floor(pixelSize / 2),
+				1, 1
+			);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			// Draw the pixel to the preview canvas
+			previewContext.fillStyle = rgbHex(r, g, b);
+			previewContext.fillRect(px, py, 1, 1);
+		}
+	}
+};
+
+const syncPreviewToMainCanvas = () => {
+	// Read each pixel from preview canvas and update main canvas
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			const imageData = previewContext.getImageData(px, py, 1, 1);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			// Draw to main canvas with grid spacing
+			canvasContext.fillStyle = rgbHex(r, g, b);
+			canvasContext.fillRect(
+				px * pixelSize + 1, 
+				py * pixelSize + 1, 
+				pixelSize - 2, 
+				pixelSize - 2
+			);
+		}
+	}
+};
+
+const invertColors = () => {
+	// Get image data from preview canvas
+	const imageData = previewContext.getImageData(0, 0, gridSize, gridSize);
+	const data = imageData.data;
+	
+	// Invert each pixel
+	for (let i = 0; i < data.length; i += 4) {
+		data[i] = 255 - data[i];         // Invert R
+		data[i + 1] = 255 - data[i + 1]; // Invert G
+		data[i + 2] = 255 - data[i + 2]; // Invert B
+		// Alpha (i+3) stays the same
+	}
+	
+	// Put the inverted data back to preview
+	previewContext.putImageData(imageData, 0, 0);
+	
+	// Sync preview to main canvas
+	syncPreviewToMainCanvas();
+	
+	console.log('Colors inverted');
+};
+
 const changeCanvasSize = (newGridSize) => {
 	// Store current pixel data
 	const oldGridSize = gridSize;
@@ -104,6 +172,11 @@ const changeCanvasSize = (newGridSize) => {
 			}
 		}
 	}
+	
+	// Update preview canvas size and refresh it
+	previewCanvas.width = gridSize;
+	previewCanvas.height = gridSize;
+	updatePreview();
 };
 
 const changeZoom = (newPixelSize) => {
@@ -155,6 +228,9 @@ const changeZoom = (newPixelSize) => {
 			}
 		}
 	}
+	
+	// Update preview
+	updatePreview();
 };
 
 const blank = () => {
@@ -164,6 +240,10 @@ const blank = () => {
 	canvasContext.strokeStyle = penColour;
 	canvasContext.clearRect(0, 0, w, h);
 	canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+	
+	// Clear preview
+	previewContext.fillStyle = "white";
+	previewContext.fillRect(0, 0, gridSize, gridSize);
 	
 	// Draw light grid lines (every pixel)
 	penColour = "#eeeeee";
@@ -268,23 +348,42 @@ const handleFileSelect = (event) => {
 			// Alpha (i+3) stays the same
 		}
 		
-		// Put the processed image data back
-		tempContext.putImageData(imageData, 0, 0);
-		
-		// Clear canvas and redraw grid
-		blank();
-		
-		// Draw the monochrome image to main canvas
-		canvasContext.drawImage(tempCanvas, 0, 0);
-		
-		// Clean up the object URL
-		URL.revokeObjectURL(imageUrl);
-		
-		console.log('Image imported and converted to monochrome');
-		
-		// Reset the file input so the same file can be selected again
-		event.target.value = '';
-	};
+	// Put the processed image data back
+	tempContext.putImageData(imageData, 0, 0);
+	
+	// Clear canvas and redraw grid
+	blank();
+	
+	// Draw the monochrome image pixel-by-pixel to main canvas, respecting grid lines
+	for (let py = 0; py < gridSize; py++) {
+		for (let px = 0; px < gridSize; px++) {
+			// Sample the center of each logical pixel area from temp canvas
+			const sampleX = px * pixelSize + Math.floor(pixelSize / 2);
+			const sampleY = py * pixelSize + Math.floor(pixelSize / 2);
+			const pixelData = tempContext.getImageData(sampleX, sampleY, 1, 1);
+			const r = pixelData.data[0];
+			const g = pixelData.data[1];
+			const b = pixelData.data[2];
+			
+			// Only draw if it's not white (background)
+			if (r < 250 || g < 250 || b < 250) {
+				canvasContext.fillStyle = rgbHex(r, g, b);
+				canvasContext.fillRect(px * pixelSize + 1, py * pixelSize + 1, pixelSize - 2, pixelSize - 2);
+			}
+		}
+	}
+	
+	// Update preview
+	updatePreview();
+	
+	// Clean up the object URL
+	URL.revokeObjectURL(imageUrl);
+	
+	console.log('Image imported and converted to monochrome');
+	
+	// Reset the file input so the same file can be selected again
+	event.target.value = '';
+};
 	
 	image.onerror = () => {
 		console.error('Failed to load image');
@@ -298,40 +397,9 @@ const handleFileSelect = (event) => {
 };
 
 const downloadDrawing = () => {
-	// Create a temporary canvas for the clean output at actual grid size
-	const tempCanvas = document.createElement('canvas');
-	tempCanvas.width = gridSize;
-	tempCanvas.height = gridSize;
-	const tempContext = tempCanvas.getContext('2d');
-	
-	// Fill with white background
-	tempContext.fillStyle = "white";
-	tempContext.fillRect(0, 0, gridSize, gridSize);
-	
-	// Read logical pixels and render them cleanly (without grid lines)
-	
-	for (let py = 0; py < gridSize; py++) {
-		for (let px = 0; px < gridSize; px++) {
-			// Sample the center of each logical pixel to get its color
-			const imageData = canvasContext.getImageData(
-				px * pixelSize + Math.floor(pixelSize / 2),
-				py * pixelSize + Math.floor(pixelSize / 2),
-				1, 1
-			);
-			const r = imageData.data[0];
-			const g = imageData.data[1];
-			const b = imageData.data[2];
-			
-			// Draw the pixel to the temp canvas
-			tempContext.fillStyle = rgbHex(r, g, b);
-			tempContext.fillRect(px, py, 1, 1);
-		}
-	}
-	
-	// Download the canvas as PNG
-	const canvasUrl = tempCanvas.toDataURL('image/png');
+	// Use the preview canvas which is already rendering the clean output
 	const createEl = document.createElement('a');
-	createEl.href = canvasUrl;
+	createEl.href = previewCanvas.toDataURL('image/png');
 	createEl.download = "drawing_" + Date.now() + ".png";
 	createEl.click();
 	createEl.remove();
@@ -342,38 +410,10 @@ const saveDocument = () => {
 
 	let name = 'drawing_' + Date.now();
 	let row, col, charRow;
-	let renderedCanvas = document.getElementById("64x64");
 	
-	// Resize the render canvas to match current grid size
-	renderedCanvas.width = gridSize;
-	renderedCanvas.height = gridSize;
-	
-	let renderedContext = renderedCanvas.getContext("2d", { willReadFrequently: true });
-	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
-	
-	// Fill with white background
-	renderedContext.fillStyle = "white";
-	renderedContext.fillRect(0, 0, renderedCanvas.width, renderedCanvas.height);
-	
-	// Read logical pixels and render them cleanly (without grid lines)
-	
-	for (let py = 0; py < gridSize; py++) {
-		for (let px = 0; px < gridSize; px++) {
-			// Sample the center of each logical pixel to get its color
-			const imageData = canvasContext.getImageData(
-				px * pixelSize + Math.floor(pixelSize / 2),
-				py * pixelSize + Math.floor(pixelSize / 2),
-				1, 1
-			);
-			const r = imageData.data[0];
-			const g = imageData.data[1];
-			const b = imageData.data[2];
-			
-			// Draw the pixel to the rendered canvas
-			renderedContext.fillStyle = rgbHex(r, g, b);
-			renderedContext.fillRect(px, py, 1, 1);
-		}
-	}
+	// Use the preview canvas which is already rendering the clean output
+	let renderedCanvas = previewCanvas;
+	let renderedContext = previewContext;
 	
 	
 	let allCharacters = [];
@@ -517,6 +557,9 @@ const mouseControl = (e, eventType) => {
 			canvasContext.fillStyle = penColour;
 			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
 		}
+		
+		// Update preview in real-time
+		updatePreview();
 	}
 };
 
@@ -528,11 +571,17 @@ const init = () => {
 	mouseControl.isDrawing = false;
 	canvas = document.getElementById('drawingCanvas');
 	canvasContainer = document.getElementById('canvasContainer');
+	previewCanvas = document.getElementById('previewCanvas');
+	previewContext = previewCanvas.getContext('2d', { willReadFrequently: true });
 	
 	// Initialize canvas size
 	const newSize = gridSize * pixelSize;
 	canvas.width = newSize;
 	canvas.height = newSize;
+	
+	// Initialize preview canvas size
+	previewCanvas.width = gridSize;
+	previewCanvas.height = gridSize;
 	
 	canvas.addEventListener('contextmenu', function(e) {
 		if ( parseInt( e.button ) === 2 ) {
@@ -564,6 +613,9 @@ const init = () => {
 
 	// Set up the bitmap drawing area with grid
 	blank();
+	
+	// Initial preview update
+	updatePreview();
 
 	canvas.addEventListener("mousedown", function (e) { mouseControl(e,"down") }, false);
 	canvas.addEventListener("mousemove", function (e) { mouseControl(e,"move") }, false);
