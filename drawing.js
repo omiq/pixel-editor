@@ -671,11 +671,13 @@ const mouseControl = (e, eventType) => {
 				if(currentTool==="line") {
 					canvasContext.beginPath();
 					canvasContext.moveTo(toolStartX*pixelSize, toolStartY*pixelSize);
-					canvasContext.lineTo(mouseX*pixelSize, mouseY*pixelSize);
+					canvasContext.lineTo(mouseX*pixelSize+pixelSize, mouseY*pixelSize+pixelSize);
 					canvasContext.stroke();
 				}
-				else if(currentTool==="rect") canvasContext.strokeRect(toolStartX*pixelSize, toolStartY*pixelSize, (mouseX-toolStartX)*pixelSize, (mouseY-toolStartY)*pixelSize);
-				else if(currentTool==="circle") {
+				else if(currentTool==="rect"){ 
+					canvasContext.strokeRect(toolStartX*pixelSize, toolStartY*pixelSize, (mouseX-toolStartX)*pixelSize+pixelSize, (mouseY-toolStartY)*pixelSize+pixelSize);
+				}
+					else if(currentTool==="circle") {
 
 					canvasContext.beginPath();
 					// Calculate bounding box dimensions (add pixelSize to include both start and end pixels)
