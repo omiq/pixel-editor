@@ -4,6 +4,7 @@ let mouseY          = 0;
 let penColour       = "#eeeeee";
 let prevColour      = penColour;
 let pixelSize       = 10;
+let gridSize        = 64; // Default 8x8 characters (64x64 pixels)
 let isPanning       = false;
 let panStartX       = 0;
 let panStartY       = 0;
@@ -54,9 +55,59 @@ const changeColour = (obj) => {
 	penColour = colourPalette[obj.id] || obj.id;
 };
 
+const changeCanvasSize = (newGridSize) => {
+	// Store current pixel data
+	const oldGridSize = gridSize;
+	const pixelData = [];
+	
+	// Read each logical pixel's color from current canvas
+	for (let py = 0; py < oldGridSize; py++) {
+		pixelData[py] = [];
+		for (let px = 0; px < oldGridSize; px++) {
+			const imageData = canvasContext.getImageData(
+				px * pixelSize + Math.floor(pixelSize / 2),
+				py * pixelSize + Math.floor(pixelSize / 2),
+				1, 1
+			);
+			const r = imageData.data[0];
+			const g = imageData.data[1];
+			const b = imageData.data[2];
+			
+			if (r < 250 || g < 250 || b < 250) {
+				pixelData[py][px] = rgbHex(r, g, b);
+			} else {
+				pixelData[py][px] = null;
+			}
+		}
+	}
+	
+	// Update grid size
+	gridSize = parseInt(newGridSize);
+	
+	// Resize canvas
+	const newSize = gridSize * pixelSize;
+	canvas.width = newSize;
+	canvas.height = newSize;
+	w = canvas.width;
+	h = canvas.height;
+	
+	// Redraw grid
+	blank();
+	
+	// Redraw pixels (only those that fit in new size)
+	const copySize = Math.min(oldGridSize, gridSize);
+	for (let py = 0; py < copySize; py++) {
+		for (let px = 0; px < copySize; px++) {
+			if (pixelData[py] && pixelData[py][px]) {
+				canvasContext.fillStyle = pixelData[py][px];
+				canvasContext.fillRect(px * pixelSize + 1, py * pixelSize + 1, pixelSize - 2, pixelSize - 2);
+			}
+		}
+	}
+};
+
 const changeZoom = (newPixelSize) => {
-	// Store the current pixel data before changing zoom (always 64x64 logical pixels)
-	const gridSize = 64;
+	// Store the current pixel data before changing zoom
 	const pixelData = [];
 	
 	// Read each logical pixel's color
@@ -85,8 +136,8 @@ const changeZoom = (newPixelSize) => {
 	// Update pixel size
 	pixelSize = parseInt(newPixelSize);
 	
-	// Resize canvas to fit 64x64 logical pixels at new zoom
-	const newSize = 64 * pixelSize;
+	// Resize canvas to fit current grid size at new zoom
+	const newSize = gridSize * pixelSize;
 	canvas.width = newSize;
 	canvas.height = newSize;
 	w = canvas.width;
@@ -210,18 +261,17 @@ const handleFileSelect = (event) => {
 };
 
 const downloadDrawing = () => {
-	// Create a temporary canvas for the clean 64x64 output
+	// Create a temporary canvas for the clean output at actual grid size
 	const tempCanvas = document.createElement('canvas');
-	tempCanvas.width = 64;
-	tempCanvas.height = 64;
+	tempCanvas.width = gridSize;
+	tempCanvas.height = gridSize;
 	const tempContext = tempCanvas.getContext('2d');
 	
 	// Fill with white background
 	tempContext.fillStyle = "white";
-	tempContext.fillRect(0, 0, 64, 64);
+	tempContext.fillRect(0, 0, gridSize, gridSize);
 	
-	// Read logical pixels and render them cleanly to 64x64 canvas (without grid lines)
-	const gridSize = 64; // Always 64x64 logical pixels
+	// Read logical pixels and render them cleanly (without grid lines)
 	
 	for (let py = 0; py < gridSize; py++) {
 		for (let px = 0; px < gridSize; px++) {
@@ -256,6 +306,11 @@ const saveDocument = () => {
 	let name = 'drawing_' + Date.now();
 	let row, col, charRow;
 	let renderedCanvas = document.getElementById("64x64");
+	
+	// Resize the render canvas to match current grid size
+	renderedCanvas.width = gridSize;
+	renderedCanvas.height = gridSize;
+	
 	let renderedContext = renderedCanvas.getContext("2d", { willReadFrequently: true });
 	renderedContext.clearRect(0, 0, renderedCanvas.width, renderedCanvas.height);
 	
@@ -263,8 +318,7 @@ const saveDocument = () => {
 	renderedContext.fillStyle = "white";
 	renderedContext.fillRect(0, 0, renderedCanvas.width, renderedCanvas.height);
 	
-	// Read logical pixels and render them cleanly to 64x64 canvas (without grid lines)
-	const gridSize = 64; // Always 64x64 logical pixels
+	// Read logical pixels and render them cleanly (without grid lines)
 	
 	for (let py = 0; py < gridSize; py++) {
 		for (let px = 0; px < gridSize; px++) {
@@ -289,9 +343,13 @@ const saveDocument = () => {
 	let dataStatements = [];
 	let lineNumber = 1000;
 	
-	// Loop through each 8x8 character in the 64x64 grid
-	for(row=0; row<8; row++) {
-		for(col=0; col<8; col++) {
+	// Calculate number of 8x8 characters (each char is 8x8 pixels)
+	const numCharsWide = gridSize / 8;
+	const numCharsHigh = gridSize / 8;
+	
+	// Loop through each 8x8 character in the grid
+	for(row=0; row<numCharsHigh; row++) {
+		for(col=0; col<numCharsWide; col++) {
 			let charData = [];
 			// console.log(`Character at col=${col}, row=${row}`);
 			
@@ -433,6 +491,11 @@ const init = () => {
 	mouseControl.isDrawing = false;
 	canvas = document.getElementById('drawingCanvas');
 	canvasContainer = document.getElementById('canvasContainer');
+	
+	// Initialize canvas size
+	const newSize = gridSize * pixelSize;
+	canvas.width = newSize;
+	canvas.height = newSize;
 	
 	canvas.addEventListener('contextmenu', function(e) {
 		if ( parseInt( e.button ) === 2 ) {
