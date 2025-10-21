@@ -590,6 +590,7 @@ const mouseControl = (e, eventType) => {
 	mouseY = parseInt((e.clientY - rect.top) / pixelSize);
 
 
+
 	// Handle drawing based on current tool
 	if (mouseControl.isDrawing) {
 		switch (currentTool) {
@@ -614,6 +615,7 @@ const mouseControl = (e, eventType) => {
 					toolStartX = mouseX;
 					toolStartY = mouseY;
 					isDrawingShape = true;
+
 				}
 				// Line drawing will be implemented later
 				break;
@@ -660,10 +662,42 @@ const mouseControl = (e, eventType) => {
 	
 	// Handle mouse up for shape tools
 	if (eventType === "up" && isDrawingShape) {
-		isDrawingShape = false;
+		
 		// Shape completion will be implemented later
 		console.log('Shape complete:', currentTool, 'from', toolStartX, toolStartY, 'to', mouseX, mouseY);
-	}
+		if(isDrawingShape) {
+				
+
+				if(currentTool==="line") {
+					canvasContext.beginPath();
+					canvasContext.moveTo(toolStartX*pixelSize, toolStartY*pixelSize);
+					canvasContext.lineTo(mouseX*pixelSize, mouseY*pixelSize);
+					canvasContext.stroke();
+				}
+				else if(currentTool==="rect") canvasContext.strokeRect(toolStartX*pixelSize, toolStartY*pixelSize, (mouseX-toolStartX)*pixelSize, (mouseY-toolStartY)*pixelSize);
+				else if(currentTool==="circle") {
+
+					canvasContext.beginPath();
+					// Calculate bounding box dimensions (add pixelSize to include both start and end pixels)
+					let width = (mouseX - toolStartX) * pixelSize + pixelSize;
+					let height = (mouseY - toolStartY) * pixelSize + pixelSize;
+					// Calculate center point
+					let centerX = (toolStartX * pixelSize) + (width / 2);
+					let centerY = (toolStartY * pixelSize) + (height / 2);
+					// Calculate radii (ellipse to fit the bounding box)
+					let radiusX = Math.abs(width) / 2;
+					let radiusY = Math.abs(height) / 2;
+					canvasContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+					canvasContext.stroke();
+
+
+				}
+					
+					
+					
+			}
+			isDrawingShape = false;
+		}
 };
 
 
