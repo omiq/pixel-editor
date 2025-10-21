@@ -237,13 +237,50 @@ const handleFileSelect = (event) => {
 	const image = new Image();
 	
 	image.onload = () => {
-		// Draw the image scaled to the canvas
-		canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+		// Create a temporary canvas to process the image
+		const tempCanvas = document.createElement('canvas');
+		tempCanvas.width = canvas.width;
+		tempCanvas.height = canvas.height;
+		const tempContext = tempCanvas.getContext('2d');
+		
+		// Draw the image scaled to temp canvas
+		tempContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+		
+		// Get image data
+		const imageData = tempContext.getImageData(0, 0, canvas.width, canvas.height);
+		const data = imageData.data;
+		
+		// Convert to monochrome (black and white) based on luminance
+		for (let i = 0; i < data.length; i += 4) {
+			const r = data[i];
+			const g = data[i + 1];
+			const b = data[i + 2];
+			
+			// Calculate luminance
+			const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+			
+			// Threshold at 128 - below is black, above is white
+			const value = luminance < 128 ? 0 : 255;
+			
+			data[i] = value;     // R
+			data[i + 1] = value; // G
+			data[i + 2] = value; // B
+			// Alpha (i+3) stays the same
+		}
+		
+		// Put the processed image data back
+		tempContext.putImageData(imageData, 0, 0);
+		
+		// Clear canvas and redraw grid
+		blank();
+		
+		// Draw the monochrome image to main canvas
+		canvasContext.drawImage(tempCanvas, 0, 0);
 		
 		// Clean up the object URL
 		URL.revokeObjectURL(imageUrl);
 		
-		console.log('Image imported successfully');
+		console.log('Image imported and converted to monochrome');
 		
 		// Reset the file input so the same file can be selected again
 		event.target.value = '';
