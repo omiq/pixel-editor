@@ -144,20 +144,21 @@
             box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
         }
 
-.draw-tool:hover {
+        .draw-tool:hover {
             transform: translateY(-2px);
             box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
             filter: brightness(1.1);
-    }
+        }
 
-.draw-tool:active {
+        .draw-tool:active {
             transform: translateY(0);
-    }
+            filter: brightness(0.9);
+        }
 
         .controls-panel {
             background: #adadad;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-top: 20px;
             border: 2px solid #626262;
         }
@@ -168,7 +169,7 @@
         .control-group label {
             font-weight: 500;
             color: #000000;
-            margin-right: 8px;
+            margin-right: 10px;
         }
         .control-group input[type="text"] {
             border: 2px solid #626262;
@@ -216,26 +217,28 @@
             </div>
 
             <!-- drawing toolbar-->
- <div>
-    <!-- align center with background color -->
-     <div style="padding: 10px; border-radius: 5px;">
-        <!-- buttons with icons -->
-        <button class="draw-tool btn-pencil bi bi-pencil" title="Draw Pixels" onclick="pencil()">Pencil</button>
-        <button class="draw-tool btn-line bi bi-slash-lg" title="Draw Line" onclick="drawLine()">Line</button>
-        <button class="draw-tool btn-rect bi bi-square" title="Draw Rectangle" onclick="drawRect()">Rect</button>
-        <button class="draw-tool btn-circle bi bi-circle" title="Draw Circle" onclick="drawCircle()">Circle</button>
-        <button class="draw-tool btn-fill bi bi-paint-bucket" title="Flood Fill" onclick="fill()">Fill</button>
+            <div>
+                <!-- align center with background color -->
+                <div style="padding: 10px; border-radius: 5px;">
+                    <!-- buttons with icons -->
+                    <button class="draw-tool btn-pencil bi bi-pencil" title="Draw Pixels" onclick="pencil()">Pencil</button>
+                    <button class="draw-tool btn-line bi bi-slash-lg" title="Draw Line" onclick="drawLine()">Line</button>
+                    <button class="draw-tool btn-rect bi bi-square" title="Draw Rectangle" onclick="drawRect()">Rect</button>
+                    <button class="draw-tool btn-circle bi bi-circle" title="Draw Circle" onclick="drawCircle()">Circle</button>
+                    <button class="draw-tool btn-fill bi bi-paint-bucket" title="Flood Fill" onclick="fill()">Fill</button>
 
-<!-- selection tool -->
-<button class="draw-tool btn-select bi bi-bounding-box" title="Select" onclick="select()">Select</button>
-<!-- copy paste flip horizontal and vertical -->
-<button class="draw-tool btn-copy bi bi-clipboard2-plus" title="Copy" onclick="copy()">Copy</button>
-<button class="draw-tool btn-paste bi bi-clipboard2-check" title="Paste" onclick="paste()">Paste</button>
-<button class="draw-tool btn-flip-horizontal bi bi-arrow-left-right" title="Flip Horizontal" onclick="flipHorizontal()">Flip</button>
-<button class="draw-tool btn-flip-vertical bi bi-arrow-down-up" title="Flip Vertical" onclick="flipVertical()">Flip</button>
-    </div>
+                    <!-- selection tool -->
+                    <button class="draw-tool btn-select bi bi-bounding-box" title="Select" onclick="select()">Select</button>
+                    <!-- copy paste flip horizontal and vertical -->
+                    <span style="height: 30px; width: 2px; padding: 5px 5px; border-left: 2px solid rgba(0,0,0,0.3); border-top: 2px solid rgba(0,0,0,0.3); border-right: 2px solid white; border-bottom: 2px solid white; margin-right: 20px;"></span>
 
- </div>
+                    <button class="draw-tool btn-copy bi bi-clipboard2-plus" title="Copy" onclick="copy()">Copy</button>
+                    <button class="draw-tool btn-paste bi bi-clipboard2-check" title="Paste" onclick="paste()">Paste</button>
+                    <button class="draw-tool btn-flip-horizontal bi bi-arrow-left-right" title="Flip Horizontal" onclick="flipHorizontal()">Flip</button>
+                    <button class="draw-tool btn-flip-vertical bi bi-arrow-down-up" title="Flip Vertical" onclick="flipVertical()">Flip</button>
+                </div>
+
+            </div>
 
             <div style="display: flex; justify-content: center; align-items: flex-start; gap: 20px; margin-bottom: 20px;">
                 
@@ -258,7 +261,7 @@
                     <h5 style="margin-top: 0; color: #000000; font-weight: 600;">Controls</h5>
                     <div class="control-group" style="display: block; margin-bottom: 15px;">
                         <label for="canvasSize" style="display: block; margin-bottom: 5px;">Canvas Size:</label>
-                        <select id="canvasSize" onchange="changeCanvasSize(this.value)" style="width: 100%; font-size: 8px; margin-bottom: 10px;">
+                        <select id="canvasSize" onchange="changeCanvasSize(this.value)" style="width: 100%; font-size: 10px; margin-bottom: 10px;">
                             <option value="8">1x1 char (8x8px)</option>
                             <option value="16">2x2 chars (16x16px)</option>
                             <option value="32">4x4 chars (32x32px)</option>
@@ -273,7 +276,7 @@
                         <input type="text" name="Y" id="y" value="0" style="font-size: 8px; width: 70px;" readonly>
 
                         <label for="zoomLevel" style="display: block; margin-top: 10px; margin-bottom: 5px;">Zoom Level:</label>
-                        <select id="zoomLevel" onchange="changeZoom(this.value)" style="width: 100%; font-size: 8px;">
+                        <select id="zoomLevel" onchange="changeZoom(this.value)" style="width: 100%; font-size: 10px;">
                             <option value="5">5x</option>
                             <option value="8">8x</option>
                             <option value="10" selected>10x</option>
