@@ -11,6 +11,12 @@ let panStartY       = 0;
 let scrollStartX    = 0;
 let scrollStartY    = 0;
 
+// Drawing tool state
+let currentTool     = "pencil"; // pencil, line, rect, circle, fill, select
+let toolStartX      = -1;
+let toolStartY      = -1;
+let isDrawingShape  = false;
+
 const colourPalette = {
 	"Red": "#ff0000",
 	"DarkRed": "#AA0000",
@@ -122,6 +128,44 @@ const invertColors = () => {
 	
 	console.log('Colors inverted');
 };
+
+// Tool selection functions
+const setActiveTool = (toolName) => {
+	currentTool = toolName;
+	
+	// Update button visual states
+	const buttons = document.querySelectorAll('.draw-tool');
+	buttons.forEach(btn => btn.classList.remove('active'));
+	
+	// Add active class to the selected tool button
+	const activeButton = {
+		'pencil': '.btn-pencil',
+		'line': '.btn-line',
+		'rect': '.btn-rect',
+		'circle': '.btn-circle',
+		'fill': '.btn-fill',
+		'select': '.btn-select'
+	}[toolName];
+	
+	if (activeButton) {
+		document.querySelector(activeButton)?.classList.add('active');
+	}
+	
+	console.log('Active tool:', toolName);
+};
+
+const pencil = () => setActiveTool('pencil');
+const drawLine = () => setActiveTool('line');
+const drawRect = () => setActiveTool('rect');
+const drawCircle = () => setActiveTool('circle');
+const fill = () => setActiveTool('fill');
+const select = () => setActiveTool('select');
+
+// Clipboard operations (to be implemented)
+const copy = () => console.log('Copy - to be implemented');
+const paste = () => console.log('Paste - to be implemented');
+const flipHorizontal = () => console.log('Flip Horizontal - to be implemented');
+const flipVertical = () => console.log('Flip Vertical - to be implemented');
 
 const changeCanvasSize = (newGridSize) => {
 	// Store current pixel data
@@ -546,20 +590,79 @@ const mouseControl = (e, eventType) => {
 	mouseY = parseInt((e.clientY - rect.top) / pixelSize);
 
 
-	if( mouseControl.isDrawing ) {
-		// Draw within the grid lines so they are never overwritten
-		if ( penColour === "white" || e.button === 2 ) {
-			// Erase - fill with white within the grid boundaries
-			canvasContext.fillStyle = "white";
-			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
-		} else {
-			// Draw - fill with color within the grid boundaries
-			canvasContext.fillStyle = penColour;
-			canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
+	// Handle drawing based on current tool
+	if (mouseControl.isDrawing) {
+		switch (currentTool) {
+			case "pencil":
+				// Original pixel drawing behavior
+				if (penColour === "white" || e.button === 2) {
+					// Erase - fill with white within the grid boundaries
+					canvasContext.fillStyle = "white";
+					canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
+				} else {
+					// Draw - fill with color within the grid boundaries
+					canvasContext.fillStyle = penColour;
+					canvasContext.fillRect((mouseX * pixelSize) + 1, (mouseY * pixelSize) + 1, pixelSize - 2, pixelSize - 2);
+				}
+				// Update preview in real-time
+				updatePreview();
+				break;
+				
+			case "line":
+				// Line tool - track start point, draw on mouse up
+				if (eventType === "down") {
+					toolStartX = mouseX;
+					toolStartY = mouseY;
+					isDrawingShape = true;
+				}
+				// Line drawing will be implemented later
+				break;
+				
+			case "rect":
+				// Rectangle tool - track start point, draw on mouse up
+				if (eventType === "down") {
+					toolStartX = mouseX;
+					toolStartY = mouseY;
+					isDrawingShape = true;
+				}
+				// Rectangle drawing will be implemented later
+				break;
+				
+			case "circle":
+				// Circle tool - track start point, draw on mouse up
+				if (eventType === "down") {
+					toolStartX = mouseX;
+					toolStartY = mouseY;
+					isDrawingShape = true;
+				}
+				// Circle drawing will be implemented later
+				break;
+				
+			case "fill":
+				// Flood fill - single click action
+				if (eventType === "down") {
+					// Flood fill will be implemented later
+					console.log('Flood fill at', mouseX, mouseY);
+				}
+				break;
+				
+			case "select":
+				// Selection tool - track region
+				if (eventType === "down") {
+					toolStartX = mouseX;
+					toolStartY = mouseY;
+					isDrawingShape = true;
+				}
+				// Selection will be implemented later
+				break;
 		}
-		
-		// Update preview in real-time
-		updatePreview();
+	}
+	
+	// Handle mouse up for shape tools
+	if (eventType === "up" && isDrawingShape) {
+		isDrawingShape = false;
+		// Shape completion will be implemented later
+		console.log('Shape complete:', currentTool, 'from', toolStartX, toolStartY, 'to', mouseX, mouseY);
 	}
 };
 
@@ -622,5 +725,8 @@ const init = () => {
 	canvas.addEventListener("mouseup", function (e) { mouseControl(e,"up") }, false);
 	canvas.addEventListener("mouseout", function (e) { mouseControl(e,"out") }, false);
 	canvas.addEventListener("mouseover", function (e) { mouseControl(e,"over") }, false);
+	
+	// Set default drawing tool
+	setActiveTool('pencil');
 
 };
