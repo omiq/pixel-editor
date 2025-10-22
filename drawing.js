@@ -681,20 +681,63 @@ const mouseControl = (e, eventType) => {
 				previewContext.imageSmoothingEnabled = false;
 
 				if(currentTool==="line") {
+
+// if end is to the left of start or end is above start, then swap the points we need
+// to adjust the coordinates 
+// if (mouseX < toolStartX) {
+// 	mouseX +=1;
+// 	toolStartX -=1;
+// }
+
+// if (mouseY < toolStartY) {
+// 	mouseY +=1;
+// 	toolStartY -=1;
+// }
+
+
 					// canvasContext.beginPath();
 					// Add 0.5 to floored coordinates for crisp 1px lines
-					let x1 = Math.floor(toolStartX * pixelSize) + 0.5;
-					let y1 = Math.floor(toolStartY * pixelSize) + 0.5;
-					let x2 = Math.floor((mouseX + 1) * pixelSize) + 0.5;
-					let y2 = Math.floor((mouseY + 1) * pixelSize) + 0.5;
+					// let x1 = Math.floor(toolStartX * pixelSize) ;
+					// let y1 = Math.floor(toolStartY * pixelSize) ;
+					// let x2 = Math.floor((mouseX + 1) * pixelSize) ;
+					// let y2 = Math.floor((mouseY + 1) * pixelSize) ;
 					// canvasContext.moveTo(x1, y1);
 					// canvasContext.lineTo(x2, y2);
 					// canvasContext.stroke();
 
-					previewContext.beginPath();
-					previewContext.moveTo(Math.floor(toolStartX) + 0.5, Math.floor(toolStartY) + 0.5);
-					previewContext.lineTo(Math.floor(mouseX + 1) + 0.5, Math.floor(mouseY + 1) + 0.5);
-					previewContext.stroke();
+					if(mouseX >= toolStartX && mouseY >= toolStartY)
+					{
+						previewContext.beginPath();
+						previewContext.moveTo(Math.floor(toolStartX), Math.floor(toolStartY) );
+						previewContext.lineTo(Math.floor(mouseX + 1), Math.floor(mouseY + 1));
+						previewContext.stroke();
+				    }
+					else
+					{
+						if(mouseX >= toolStartX)
+						{
+							previewContext.beginPath();
+							previewContext.moveTo(toolStartX, toolStartY+1);
+							previewContext.lineTo(mouseX+1, mouseY );
+							previewContext.stroke();
+						}
+						else if(mouseY > toolStartY && mouseX < toolStartX)
+						{
+							console.log("drawing up");
+							previewContext.beginPath();
+							previewContext.moveTo(toolStartX+1, toolStartY);
+							previewContext.lineTo(mouseX, mouseY+1 );
+							previewContext.stroke();
+						}
+						else
+						{
+							console.log("drawing left");
+							previewContext.beginPath();
+							previewContext.moveTo(toolStartX+1, toolStartY+1);
+							previewContext.lineTo(mouseX, mouseY );
+							previewContext.stroke();
+						}
+					}
 				}
 				else if(currentTool==="rect"){ 
 					// canvasContext.beginPath();
