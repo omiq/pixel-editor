@@ -107,6 +107,33 @@ const syncPreviewToMainCanvas = () => {
 	}
 };
 
+const convertToMonochrome = (context, width, height) => {
+	// Get image data from canvas
+	const imageData = context.getImageData(0, 0, width, height);
+	const data = imageData.data;
+	
+	// Convert to monochrome (black and white) based on luminance
+	for (let i = 0; i < data.length; i += 4) {
+		const r = data[i];
+		const g = data[i + 1];
+		const b = data[i + 2];
+		
+		// Calculate luminance
+		const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+		
+		// Threshold at 128 - below is black, above is white
+		const value = luminance < 128 ? 0 : 255;
+		
+		data[i] = value;     // R
+		data[i + 1] = value; // G
+		data[i + 2] = value; // B
+		// Alpha (i+3) stays the same
+	}
+	
+	// Put the processed data back
+	context.putImageData(imageData, 0, 0);
+};
+
 const invertColors = () => {
 	// Get image data from preview canvas
 	const imageData = previewContext.getImageData(0, 0, gridSize, gridSize);
@@ -370,30 +397,8 @@ const handleFileSelect = (event) => {
 		// Draw the image scaled to temp canvas
 		tempContext.drawImage(image, 0, 0, canvas.width, canvas.height);
 		
-		// Get image data
-		const imageData = tempContext.getImageData(0, 0, canvas.width, canvas.height);
-		const data = imageData.data;
-		
-		// Convert to monochrome (black and white) based on luminance
-		for (let i = 0; i < data.length; i += 4) {
-			const r = data[i];
-			const g = data[i + 1];
-			const b = data[i + 2];
-			
-			// Calculate luminance
-			const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-			
-			// Threshold at 128 - below is black, above is white
-			const value = luminance < 128 ? 0 : 255;
-			
-			data[i] = value;     // R
-			data[i + 1] = value; // G
-			data[i + 2] = value; // B
-			// Alpha (i+3) stays the same
-		}
-		
-	// Put the processed image data back
-	tempContext.putImageData(imageData, 0, 0);
+		// Convert to monochrome
+		convertToMonochrome(tempContext, canvas.width, canvas.height);
 	
 	// Clear canvas and redraw grid
 	blank();
@@ -666,51 +671,76 @@ const mouseControl = (e, eventType) => {
 		// Shape completion will be implemented later
 		console.log('Shape complete:', currentTool, 'from', toolStartX, toolStartY, 'to', mouseX, mouseY);
 		if(isDrawingShape) {
+				// Set drawing properties for crisp 1px black lines
+				// canvasContext.strokeStyle = "#000000";
+				// canvasContext.lineWidth = 1;
+				// canvasContext.imageSmoothingEnabled = false;
+				
 				previewContext.strokeStyle = "black";
 				previewContext.lineWidth = 1;
+				previewContext.imageSmoothingEnabled = false;
 
 				if(currentTool==="line") {
-					canvasContext.beginPath();
-					canvasContext.moveTo(toolStartX*pixelSize, toolStartY*pixelSize);
-					canvasContext.lineTo(mouseX*pixelSize+pixelSize, mouseY*pixelSize+pixelSize);
-					canvasContext.stroke();
+					// canvasContext.beginPath();
+					// Add 0.5 to floored coordinates for crisp 1px lines
+					let x1 = Math.floor(toolStartX * pixelSize) + 0.5;
+					let y1 = Math.floor(toolStartY * pixelSize) + 0.5;
+					let x2 = Math.floor((mouseX + 1) * pixelSize) + 0.5;
+					let y2 = Math.floor((mouseY + 1) * pixelSize) + 0.5;
+					// canvasContext.moveTo(x1, y1);
+					// canvasContext.lineTo(x2, y2);
+					// canvasContext.stroke();
 
 					previewContext.beginPath();
-					previewContext.moveTo(toolStartX, toolStartY);
-					previewContext.lineTo(mouseX+1, mouseY+1);
+					previewContext.moveTo(Math.floor(toolStartX) + 0.5, Math.floor(toolStartY) + 0.5);
+					previewContext.lineTo(Math.floor(mouseX + 1) + 0.5, Math.floor(mouseY + 1) + 0.5);
 					previewContext.stroke();
 				}
 				else if(currentTool==="rect"){ 
-					canvasContext.beginPath();
+					// canvasContext.beginPath();
 					previewContext.beginPath();
-					canvasContext.strokeRect(toolStartX*pixelSize, toolStartY*pixelSize, (mouseX-toolStartX)*pixelSize+pixelSize, (mouseY-toolStartY)*pixelSize+pixelSize);
-					previewContext.strokeRect(toolStartX, toolStartY, (mouseX-toolStartX)+1, (mouseY-toolStartY)+1);
-					canvasContext.stroke();
+					// Add 0.5 to coordinates for crisp 1px lines
+					let x = Math.floor(toolStartX*pixelSize) + 0.5;
+					let y = Math.floor(toolStartY*pixelSize) + 0.5;
+					let w = Math.floor((mouseX-toolStartX)*pixelSize+pixelSize);
+					let h = Math.floor((mouseY-toolStartY)*pixelSize+pixelSize);
+					// canvasContext.strokeRect(x, y, w, h);
+					previewContext.strokeRect(toolStartX + 0.5, toolStartY + 0.5, (mouseX-toolStartX), (mouseY-toolStartY));
+					// canvasContext.stroke();
 					previewContext.stroke();
 				}
 					else if(currentTool==="circle") {
-					canvasContext.beginPath();
+					// canvasContext.beginPath();
 					previewContext.beginPath();
 					// Calculate bounding box dimensions (add pixelSize to include both start and end pixels)
 					let width = (mouseX - toolStartX) * pixelSize + pixelSize;
 					let height = (mouseY - toolStartY) * pixelSize + pixelSize;
-					// Calculate center point
-					let centerX = (toolStartX * pixelSize) + (width / 2);
-					let centerY = (toolStartY * pixelSize) + (height / 2);
-					// Calculate radii (ellipse to fit the bounding box)
-					let radiusX = Math.abs(width) / 2;
-					let radiusY = Math.abs(height) / 2;
-					canvasContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-					canvasContext.stroke();
+					// Calculate center point (add 0.5 for crisp lines, use floored values)
+					let centerX = Math.floor(toolStartX * pixelSize + width / 2) + 0.5;
+					let centerY = Math.floor(toolStartY * pixelSize + height / 2) + 0.5;
+					// Calculate radii (floor for crisp rendering)
+					let radiusX = Math.floor(Math.abs(width) / 2);
+					let radiusY = Math.floor(Math.abs(height) / 2);
+					// canvasContext.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+					// canvasContext.stroke();
 
-
-					previewContext.ellipse(centerX/pixelSize, centerY/pixelSize, radiusX/pixelSize, radiusY/pixelSize, 0, 0, 2 * Math.PI);
+					// Preview canvas ellipse (also with 0.5 offset and floored values)
+					let pWidth = (mouseX - toolStartX) + 1;
+					let pHeight = (mouseY - toolStartY) + 1;
+					let pCenterX = Math.floor(toolStartX + pWidth / 2);
+					let pCenterY = Math.floor(toolStartY + pHeight / 2);
+					let pRadiusX = Math.floor(Math.abs(pWidth) / 2);
+					let pRadiusY = Math.floor(Math.abs(pHeight) / 2);
+					previewContext.ellipse(pCenterX, pCenterY, pRadiusX, pRadiusY, 0, 0, 2 * Math.PI);
 					previewContext.stroke();
 				}
 					
 					
 					
 			}
+			
+			// Convert preview to pure monochrome (eliminates anti-aliasing)
+			convertToMonochrome(previewContext, gridSize, gridSize);
 
 			// Sync preview to main canvas
 			syncPreviewToMainCanvas();
