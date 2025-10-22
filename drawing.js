@@ -1,4 +1,4 @@
-let canvas, canvasContext, canvasContainer, previewCanvas, previewContext, w, h;
+let canvas, canvasContext, canvasContainer, overlayCanvas, overlayContext, previewCanvas, previewContext, w, h;
 let mouseX          = 0;
 let mouseY          = 0;
 let penColour       = "#eeeeee";
@@ -160,6 +160,14 @@ const invertColors = () => {
 const setActiveTool = (toolName) => {
 	currentTool = toolName;
 	
+	// Clear overlay canvas when switching tools
+	if (overlayContext) {
+		overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+	}
+	
+	// Reset drawing state
+	isDrawingShape = false;
+	
 	// Update button visual states
 	const buttons = document.querySelectorAll('.draw-tool');
 	buttons.forEach(btn => btn.classList.remove('active'));
@@ -227,6 +235,8 @@ const changeCanvasSize = (newGridSize) => {
 	const newSize = gridSize * pixelSize;
 	canvas.width = newSize;
 	canvas.height = newSize;
+	overlayCanvas.width = newSize;
+	overlayCanvas.height = newSize;
 	w = canvas.width;
 	h = canvas.height;
 	
@@ -284,6 +294,8 @@ const changeZoom = (newPixelSize) => {
 	const newSize = gridSize * pixelSize;
 	canvas.width = newSize;
 	canvas.height = newSize;
+	overlayCanvas.width = newSize;
+	overlayCanvas.height = newSize;
 	w = canvas.width;
 	h = canvas.height;
 	
@@ -607,7 +619,6 @@ function flood_fill( x, y, color ) {
 	syncPreviewToMainCanvas();
 }
 
-
 // mouse drawing routine
 const mouseControl = (e, eventType) => {
 	
@@ -742,19 +753,48 @@ const mouseControl = (e, eventType) => {
 				break;
 				
 			case "select":
-				// Selection tool - track region
+				// Selection tool - track region and draw on overlay
 				if (eventType === "down") {
+					console.log('Select Start', mouseX, mouseY);
+					// Clear any previous selection
+					overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 					toolStartX = mouseX;
 					toolStartY = mouseY;
 					isDrawingShape = true;
 				}
-				// Selection will be implemented later
 				break;
 		}
 	}
 	
+	// Draw selection rectangle on overlay canvas in real-time
+	if (currentTool === "select" && isDrawingShape) {
+		// Clear the overlay canvas
+		overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+		
+		// Draw selection rectangle
+		overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)"; // Blue with some transparency
+		overlayContext.lineWidth = 2;
+		overlayContext.setLineDash([5, 5]); // Dashed line
+		overlayContext.strokeRect(
+			toolStartX * pixelSize,
+			toolStartY * pixelSize,
+			(mouseX - toolStartX) * pixelSize,
+			(mouseY - toolStartY) * pixelSize
+		);
+		overlayContext.setLineDash([]); // Reset dash
+	}
+	
 	// Handle mouse up for shape tools
 	if (eventType === "up" && isDrawingShape) {
+		
+		// Handle selection completion
+		if (currentTool === "select") {
+			console.log('Select End', mouseX, mouseY, 'Selection from', toolStartX, toolStartY, 'to', mouseX, mouseY);
+			// Keep the selection rectangle visible on overlay for now
+			// TODO: Implement copy/paste functionality
+			isDrawingShape = false;
+			return;
+		}
 		
 		// Shape completion will be implemented later
 		console.log('Shape complete:', currentTool, 'from', toolStartX, toolStartY, 'to', mouseX, mouseY);
@@ -770,28 +810,7 @@ const mouseControl = (e, eventType) => {
 
 				if(currentTool==="line") {
 
-// if end is to the left of start or end is above start, then swap the points we need
-// to adjust the coordinates 
-// if (mouseX < toolStartX) {
-// 	mouseX +=1;
-// 	toolStartX -=1;
-// }
 
-// if (mouseY < toolStartY) {
-// 	mouseY +=1;
-// 	toolStartY -=1;
-// }
-
-
-					// canvasContext.beginPath();
-					// Add 0.5 to floored coordinates for crisp 1px lines
-					// let x1 = Math.floor(toolStartX * pixelSize) ;
-					// let y1 = Math.floor(toolStartY * pixelSize) ;
-					// let x2 = Math.floor((mouseX + 1) * pixelSize) ;
-					// let y2 = Math.floor((mouseY + 1) * pixelSize) ;
-					// canvasContext.moveTo(x1, y1);
-					// canvasContext.lineTo(x2, y2);
-					// canvasContext.stroke();
 
 					if(mouseX >= toolStartX && mouseY >= toolStartY)
 					{
@@ -887,6 +906,8 @@ const init = () => {
 	mouseControl.isDrawing = false;
 	canvas = document.getElementById('drawingCanvas');
 	canvasContainer = document.getElementById('canvasContainer');
+	overlayCanvas = document.getElementById('overlayCanvas');
+	overlayContext = overlayCanvas.getContext('2d');
 	previewCanvas = document.getElementById('previewCanvas');
 	previewContext = previewCanvas.getContext('2d', { willReadFrequently: true });
 	
@@ -894,6 +915,8 @@ const init = () => {
 	const newSize = gridSize * pixelSize;
 	canvas.width = newSize;
 	canvas.height = newSize;
+	overlayCanvas.width = newSize;
+	overlayCanvas.height = newSize;
 	
 	// Initialize preview canvas size
 	previewCanvas.width = gridSize;
@@ -945,3 +968,4 @@ const init = () => {
 	setActiveTool('pencil');
 
 };
+
