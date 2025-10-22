@@ -666,20 +666,31 @@ const mouseControl = (e, eventType) => {
 		// Shape completion will be implemented later
 		console.log('Shape complete:', currentTool, 'from', toolStartX, toolStartY, 'to', mouseX, mouseY);
 		if(isDrawingShape) {
-				
+				previewContext.strokeStyle = "black";
+				previewContext.lineWidth = 1;
 
 				if(currentTool==="line") {
 					canvasContext.beginPath();
 					canvasContext.moveTo(toolStartX*pixelSize, toolStartY*pixelSize);
 					canvasContext.lineTo(mouseX*pixelSize+pixelSize, mouseY*pixelSize+pixelSize);
 					canvasContext.stroke();
+
+					previewContext.beginPath();
+					previewContext.moveTo(toolStartX, toolStartY);
+					previewContext.lineTo(mouseX+1, mouseY+1);
+					previewContext.stroke();
 				}
 				else if(currentTool==="rect"){ 
+					canvasContext.beginPath();
+					previewContext.beginPath();
 					canvasContext.strokeRect(toolStartX*pixelSize, toolStartY*pixelSize, (mouseX-toolStartX)*pixelSize+pixelSize, (mouseY-toolStartY)*pixelSize+pixelSize);
+					previewContext.strokeRect(toolStartX, toolStartY, (mouseX-toolStartX)+1, (mouseY-toolStartY)+1);
+					canvasContext.stroke();
+					previewContext.stroke();
 				}
 					else if(currentTool==="circle") {
-
 					canvasContext.beginPath();
+					previewContext.beginPath();
 					// Calculate bounding box dimensions (add pixelSize to include both start and end pixels)
 					let width = (mouseX - toolStartX) * pixelSize + pixelSize;
 					let height = (mouseY - toolStartY) * pixelSize + pixelSize;
@@ -693,11 +704,16 @@ const mouseControl = (e, eventType) => {
 					canvasContext.stroke();
 
 
+					previewContext.ellipse(centerX/pixelSize, centerY/pixelSize, radiusX/pixelSize, radiusY/pixelSize, 0, 0, 2 * Math.PI);
+					previewContext.stroke();
 				}
 					
 					
 					
 			}
+
+			// Sync preview to main canvas
+			syncPreviewToMainCanvas();
 			isDrawingShape = false;
 		}
 };
@@ -744,6 +760,8 @@ const init = () => {
 
 	canvasContext.fillStyle = "white";
 	canvasContext.strokeStyle = penColour;
+	previewContext.fillStyle = "white";
+	previewContext.strokeStyle = penColour;
 
 	w = canvas.width;
 	h = canvas.height;
