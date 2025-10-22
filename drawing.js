@@ -533,6 +533,81 @@ const saveDocument = () => {
 };
 
 
+function flood_fill( x, y, color ) {
+    pixel_stack = [{x:x, y:y}] ;
+    pixels = previewContext.getImageData( 0, 0, previewCanvas.width, previewCanvas.height ) ;
+    var linear_cords = ( y * previewCanvas.width + x ) * 4 ;
+    original_color = {r:pixels.data[linear_cords],
+                      g:pixels.data[linear_cords+1],
+                      b:pixels.data[linear_cords+2],
+                      a:pixels.data[linear_cords+3]} ;
+
+    while( pixel_stack.length>0 ) {
+        new_pixel = pixel_stack.shift() ;
+        x = new_pixel.x ;
+        y = new_pixel.y ;
+
+        //console.log( x + ", " + y ) ;
+  
+        linear_cords = ( y * previewCanvas.width + x ) * 4 ;
+        while( y-->=0 &&
+               (pixels.data[linear_cords]==original_color.r &&
+                pixels.data[linear_cords+1]==original_color.g &&
+                pixels.data[linear_cords+2]==original_color.b &&
+                pixels.data[linear_cords+3]==original_color.a) ) {
+            linear_cords -= previewCanvas.width * 4 ;
+        }
+        linear_cords += previewCanvas.width * 4 ;
+        y++ ;
+
+        var reached_left = false ;
+        var reached_right = false ;
+        while( y++<previewCanvas.height &&
+               (pixels.data[linear_cords]==original_color.r &&
+                pixels.data[linear_cords+1]==original_color.g &&
+                pixels.data[linear_cords+2]==original_color.b &&
+                pixels.data[linear_cords+3]==original_color.a) ) {
+            pixels.data[linear_cords]   = color.r ;
+            pixels.data[linear_cords+1] = color.g ;
+            pixels.data[linear_cords+2] = color.b ;
+            pixels.data[linear_cords+3] = color.a ;
+
+            if( x>0 ) {
+                if( pixels.data[linear_cords-4]==original_color.r &&
+                    pixels.data[linear_cords-4+1]==original_color.g &&
+                    pixels.data[linear_cords-4+2]==original_color.b &&
+                    pixels.data[linear_cords-4+3]==original_color.a ) {
+                    if( !reached_left ) {
+                        pixel_stack.push( {x:x-1, y:y} ) ;
+                        reached_left = true ;
+                    }
+                } else if( reached_left ) {
+                    reached_left = false ;
+                }
+            }
+        
+            if( x<previewCanvas.width-1 ) {
+                if( pixels.data[linear_cords+4]==original_color.r &&
+                    pixels.data[linear_cords+4+1]==original_color.g &&
+                    pixels.data[linear_cords+4+2]==original_color.b &&
+                    pixels.data[linear_cords+4+3]==original_color.a ) {
+                    if( !reached_right ) {
+                        pixel_stack.push( {x:x+1,y:y} ) ;
+                        reached_right = true ;
+                    }
+                } else if( reached_right ) {
+                    reached_right = false ;
+                }
+            }
+            
+            linear_cords += previewCanvas.width * 4 ;
+        }
+    }
+    previewContext.putImageData( pixels, 0, 0 ) ;
+	syncPreviewToMainCanvas();
+}
+
+
 // mouse drawing routine
 const mouseControl = (e, eventType) => {
 	
@@ -648,8 +723,21 @@ const mouseControl = (e, eventType) => {
 			case "fill":
 				// Flood fill - single click action
 				if (eventType === "down") {
-					// Flood fill will be implemented later
+					
 					console.log('Flood fill at', mouseX, mouseY);
+					flood_fill(mouseX, mouseY, "black");
+					
+					// Convert to monochrome to eliminate any anti-aliasing
+					convertToMonochrome(previewContext, gridSize, gridSize);
+					
+					// Sync preview to main canvas
+					syncPreviewToMainCanvas();
+					
+					// Update preview to ensure it displays correctly
+					updatePreview();
+					
+					isDrawingShape = false;
+					console.log('Flood fill done', mouseX, mouseY);
 				}
 				break;
 				
