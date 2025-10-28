@@ -1203,7 +1203,7 @@ const init = () => {
 	canvas.addEventListener("mouseout", function (e) { mouseControl(e,"out") }, false);
 	canvas.addEventListener("mouseover", function (e) { mouseControl(e,"over") }, false);
 	
-	// Add keyboard shortcuts for copy/cut/paste
+	// Add keyboard shortcuts for copy/cut/paste/flip
 	document.addEventListener("keydown", function(e) {
 		// Check for Cmd (Mac) or Ctrl (Windows/Linux)
 		const isCmdOrCtrl = e.metaKey || e.ctrlKey;
@@ -1224,6 +1224,24 @@ const init = () => {
 					// Paste
 					e.preventDefault();
 					paste();
+					break;
+			}
+		} else {
+			// Single key shortcuts (no modifier)
+			switch(e.key.toLowerCase()) {
+				case 'h':
+					// Flip Horizontal
+					if (hasSelection) {
+						e.preventDefault();
+						flipHorizontal();
+					}
+					break;
+				case 'v':
+					// Flip Vertical
+					if (hasSelection) {
+						e.preventDefault();
+						flipVertical();
+					}
 					break;
 			}
 		}
