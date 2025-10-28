@@ -17,6 +17,21 @@ let toolStartX      = -1;
 let toolStartY      = -1;
 let isDrawingShape  = false;
 
+// Clipboard for copy/paste operations
+let clipboard       = null;
+let clipboardWidth  = 0;
+let clipboardHeight = 0;
+let isPasting       = false;
+let pasteX          = 0;
+let pasteY          = 0;
+
+// Selection tracking
+let hasSelection    = false;
+let selectionX1     = 0;
+let selectionY1     = 0;
+let selectionX2     = 0;
+let selectionY2     = 0;
+
 const colourPalette = {
 	"Red": "#ff0000",
 	"DarkRed": "#AA0000",
@@ -168,6 +183,14 @@ const setActiveTool = (toolName) => {
 	// Reset drawing state
 	isDrawingShape = false;
 	
+	// Clear selection when switching away from select tool
+	if (toolName !== 'select') {
+		hasSelection = false;
+	}
+	
+	// Exit paste mode when switching tools
+	isPasting = false;
+	
 	// Update button visual states
 	const buttons = document.querySelectorAll('.draw-tool');
 	buttons.forEach(btn => btn.classList.remove('active'));
@@ -196,11 +219,180 @@ const drawCircle = () => setActiveTool('circle');
 const fill = () => setActiveTool('fill');
 const select = () => setActiveTool('select');
 
-// Clipboard operations (to be implemented)
-const copy = () => console.log('Copy - to be implemented');
-const paste = () => console.log('Paste - to be implemented');
-const flipHorizontal = () => console.log('Flip Horizontal - to be implemented');
-const flipVertical = () => console.log('Flip Vertical - to be implemented');
+// Clipboard operations
+const copy = () => {
+	// Check if there's an active or completed selection
+	if (!hasSelection) {
+		alert('Please make a selection first using the Select tool');
+		return;
+	}
+	
+	clipboardWidth = selectionX2 - selectionX1 + 1;
+	clipboardHeight = selectionY2 - selectionY1 + 1;
+	
+	// Copy pixel data from preview canvas
+	clipboard = previewContext.getImageData(selectionX1, selectionY1, clipboardWidth, clipboardHeight);
+	
+	console.log(`Copied ${clipboardWidth}x${clipboardHeight} pixels to clipboard`);
+	
+	// Visual feedback - flash the selection
+	overlayContext.fillStyle = "rgba(0, 255, 0, 0.2)";
+	overlayContext.fillRect(selectionX1 * pixelSize, selectionY1 * pixelSize, clipboardWidth * pixelSize, clipboardHeight * pixelSize);
+	setTimeout(() => {
+		overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+		overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)";
+		overlayContext.lineWidth = 2;
+		overlayContext.setLineDash([5, 5]);
+		overlayContext.strokeRect(selectionX1 * pixelSize, selectionY1 * pixelSize, clipboardWidth * pixelSize, clipboardHeight * pixelSize);
+		overlayContext.setLineDash([]);
+	}, 200);
+};
+
+const cut = () => {
+	// Check if there's an active or completed selection
+	if (!hasSelection) {
+		alert('Please make a selection first using the Select tool');
+		return;
+	}
+	
+	// First copy the selection
+	copy();
+	
+	// Then clear the selected area
+	previewContext.fillStyle = "white";
+	previewContext.fillRect(selectionX1, selectionY1, clipboardWidth, clipboardHeight);
+	
+	// Sync to main canvas
+	syncPreviewToMainCanvas();
+	
+	// Clear the selection overlay and selection state
+	overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+	hasSelection = false;
+	
+	console.log('Cut completed');
+};
+
+const paste = () => {
+	if (!clipboard) {
+		alert('Clipboard is empty. Please copy or cut a selection first.');
+		return;
+	}
+	
+	// Enter paste mode
+	isPasting = true;
+	pasteX = 0;
+	pasteY = 0;
+	
+	// Switch to a paste mode where user can click to place
+	console.log('Paste mode activated. Click on canvas to place the copied content.');
+	
+	// Show preview of paste content on overlay
+	drawPastePreview();
+};
+
+const drawPastePreview = () => {
+	if (!isPasting || !clipboard) return;
+	
+	// Clear overlay
+	overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+	
+	// Create a temporary canvas to draw the clipboard data
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = clipboardWidth;
+	tempCanvas.height = clipboardHeight;
+	const tempContext = tempCanvas.getContext('2d');
+	tempContext.putImageData(clipboard, 0, 0);
+	
+	// Draw the clipboard content at the current paste position on overlay
+	overlayContext.globalAlpha = 0.7;
+	overlayContext.imageSmoothingEnabled = false;
+	overlayContext.drawImage(
+		tempCanvas,
+		pasteX * pixelSize,
+		pasteY * pixelSize,
+		clipboardWidth * pixelSize,
+		clipboardHeight * pixelSize
+	);
+	overlayContext.globalAlpha = 1.0;
+	
+	// Draw border around paste area
+	overlayContext.strokeStyle = "rgba(0, 255, 0, 0.8)";
+	overlayContext.lineWidth = 2;
+	overlayContext.setLineDash([5, 5]);
+	overlayContext.strokeRect(
+		pasteX * pixelSize,
+		pasteY * pixelSize,
+		clipboardWidth * pixelSize,
+		clipboardHeight * pixelSize
+	);
+	overlayContext.setLineDash([]);
+};
+
+const flipHorizontal = () => {
+	// Check if there's an active or completed selection
+	if (!hasSelection) {
+		alert('Please make a selection first using the Select tool');
+		return;
+	}
+	
+	const width = selectionX2 - selectionX1 + 1;
+	const height = selectionY2 - selectionY1 + 1;
+	
+	// Get the selected region
+	const imageData = previewContext.getImageData(selectionX1, selectionY1, width, height);
+	
+	// Create a temporary canvas for flipping
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = width;
+	tempCanvas.height = height;
+	const tempContext = tempCanvas.getContext('2d');
+	tempContext.putImageData(imageData, 0, 0);
+	
+	// Flip horizontally by scaling with -1
+	previewContext.save();
+	previewContext.translate(selectionX1 + width, selectionY1);
+	previewContext.scale(-1, 1);
+	previewContext.drawImage(tempCanvas, 0, 0);
+	previewContext.restore();
+	
+	// Sync to main canvas
+	syncPreviewToMainCanvas();
+	
+	console.log('Flipped horizontally');
+};
+
+const flipVertical = () => {
+	// Check if there's an active or completed selection
+	if (!hasSelection) {
+		alert('Please make a selection first using the Select tool');
+		return;
+	}
+	
+	const width = selectionX2 - selectionX1 + 1;
+	const height = selectionY2 - selectionY1 + 1;
+	
+	// Get the selected region
+	const imageData = previewContext.getImageData(selectionX1, selectionY1, width, height);
+	
+	// Create a temporary canvas for flipping
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = width;
+	tempCanvas.height = height;
+	const tempContext = tempCanvas.getContext('2d');
+	tempContext.putImageData(imageData, 0, 0);
+	
+	// Flip vertically by scaling with -1
+	previewContext.save();
+	previewContext.translate(selectionX1, selectionY1 + height);
+	previewContext.scale(1, -1);
+	previewContext.drawImage(tempCanvas, 0, 0);
+	previewContext.restore();
+	
+	// Sync to main canvas
+	syncPreviewToMainCanvas();
+	
+	console.log('Flipped vertically');
+};
 
 const changeCanvasSize = (newGridSize) => {
 	// Store current pixel data
@@ -622,6 +814,53 @@ function flood_fill( x, y, color ) {
 // mouse drawing routine
 const mouseControl = (e, eventType) => {
 	
+	// Get the mouse coords relative to canvas (accounting for scroll position)
+	const rect = canvas.getBoundingClientRect();
+	mouseX = parseInt((e.clientX - rect.left) / pixelSize);
+	mouseY = parseInt((e.clientY - rect.top) / pixelSize);
+	
+	// Handle paste mode
+	if (isPasting) {
+		if (eventType === "move") {
+			// Update paste preview position as mouse moves
+			pasteX = mouseX;
+			pasteY = mouseY;
+			drawPastePreview();
+			return;
+		} else if (eventType === "down" && e.button === 0) {
+			// Left click to place the paste
+			pasteX = mouseX;
+			pasteY = mouseY;
+			
+			// Paste the clipboard data to the preview canvas
+			const tempCanvas = document.createElement('canvas');
+			tempCanvas.width = clipboardWidth;
+			tempCanvas.height = clipboardHeight;
+			const tempContext = tempCanvas.getContext('2d');
+			tempContext.putImageData(clipboard, 0, 0);
+			
+			// Draw to preview canvas
+			previewContext.drawImage(tempCanvas, pasteX, pasteY);
+			
+			// Sync to main canvas
+			syncPreviewToMainCanvas();
+			
+			// Exit paste mode
+			isPasting = false;
+			overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+			
+			console.log(`Pasted at ${pasteX}, ${pasteY}`);
+			return;
+		} else if (eventType === "down" && e.button === 2) {
+			// Right click to cancel paste
+			isPasting = false;
+			overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+			console.log('Paste cancelled');
+			return;
+		}
+		return;
+	}
+	
 	// Handle middle mouse button panning
 	if (e.button === 1 || isPanning) {
 		if (eventType === "down") {
@@ -673,14 +912,6 @@ const mouseControl = (e, eventType) => {
 
 			break;
 	}
-
-
-	// Get the mouse coords relative to canvas (accounting for scroll position)
-	const rect = canvas.getBoundingClientRect();
-	mouseX = parseInt((e.clientX - rect.left) / pixelSize);
-	mouseY = parseInt((e.clientY - rect.top) / pixelSize);
-
-
 
 	// Handle drawing based on current tool
 	if (mouseControl.isDrawing) {
@@ -758,6 +989,7 @@ const mouseControl = (e, eventType) => {
 					console.log('Select Start', mouseX, mouseY);
 					// Clear any previous selection
 					overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+					hasSelection = false;
 					toolStartX = mouseX;
 					toolStartY = mouseY;
 					isDrawingShape = true;
@@ -790,8 +1022,15 @@ const mouseControl = (e, eventType) => {
 		// Handle selection completion
 		if (currentTool === "select") {
 			console.log('Select End', mouseX, mouseY, 'Selection from', toolStartX, toolStartY, 'to', mouseX, mouseY);
-			// Keep the selection rectangle visible on overlay for now
-			// TODO: Implement copy/paste functionality
+			
+			// Save the selection bounds (normalized)
+			selectionX1 = Math.min(toolStartX, mouseX);
+			selectionY1 = Math.min(toolStartY, mouseY);
+			selectionX2 = Math.max(toolStartX, mouseX);
+			selectionY2 = Math.max(toolStartY, mouseY);
+			hasSelection = true;
+			
+			// Keep the selection rectangle visible on overlay
 			isDrawingShape = false;
 			return;
 		}
@@ -963,6 +1202,39 @@ const init = () => {
 	canvas.addEventListener("mouseup", function (e) { mouseControl(e,"up") }, false);
 	canvas.addEventListener("mouseout", function (e) { mouseControl(e,"out") }, false);
 	canvas.addEventListener("mouseover", function (e) { mouseControl(e,"over") }, false);
+	
+	// Add keyboard shortcuts for copy/cut/paste
+	document.addEventListener("keydown", function(e) {
+		// Check for Cmd (Mac) or Ctrl (Windows/Linux)
+		const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+		
+		if (isCmdOrCtrl) {
+			switch(e.key.toLowerCase()) {
+				case 'c':
+					// Copy
+					e.preventDefault();
+					copy();
+					break;
+				case 'x':
+					// Cut
+					e.preventDefault();
+					cut();
+					break;
+				case 'v':
+					// Paste
+					e.preventDefault();
+					paste();
+					break;
+			}
+		}
+		
+		// Escape key to cancel paste mode
+		if (e.key === 'Escape' && isPasting) {
+			isPasting = false;
+			overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+			console.log('Paste cancelled');
+		}
+	}, false);
 	
 	// Set default drawing tool
 	setActiveTool('pencil');
