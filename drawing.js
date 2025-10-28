@@ -224,24 +224,23 @@ const selectAll = () => {
 	// Switch to select tool
 	setActiveTool('select');
 	
-	// Select entire canvas
+	// Select entire canvas (inclusive)
 	selectionX1 = 0;
 	selectionY1 = 0;
 	selectionX2 = gridSize - 1;
 	selectionY2 = gridSize - 1;
 	hasSelection = true;
 	
+	// Calculate rectangle dimensions (inclusive of all pixels)
+	const rectWidth = (selectionX2 - selectionX1 + 1) * pixelSize;
+	const rectHeight = (selectionY2 - selectionY1 + 1) * pixelSize;
+	
 	// Draw selection rectangle on overlay
 	overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 	overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)";
 	overlayContext.lineWidth = 2;
 	overlayContext.setLineDash([5, 5]);
-	overlayContext.strokeRect(
-		0,
-		0,
-		gridSize * pixelSize,
-		gridSize * pixelSize
-	);
+	overlayContext.strokeRect(0, 0, rectWidth, rectHeight);
 	overlayContext.setLineDash([]);
 	
 	console.log('Selected all');
@@ -263,15 +262,21 @@ const copy = () => {
 	
 	console.log(`Copied ${clipboardWidth}x${clipboardHeight} pixels to clipboard`);
 	
+	// Calculate display dimensions
+	const displayWidth = clipboardWidth * pixelSize;
+	const displayHeight = clipboardHeight * pixelSize;
+	const displayX = selectionX1 * pixelSize;
+	const displayY = selectionY1 * pixelSize;
+	
 	// Visual feedback - flash the selection
 	overlayContext.fillStyle = "rgba(0, 255, 0, 0.2)";
-	overlayContext.fillRect(selectionX1 * pixelSize, selectionY1 * pixelSize, clipboardWidth * pixelSize, clipboardHeight * pixelSize);
+	overlayContext.fillRect(displayX, displayY, displayWidth, displayHeight);
 	setTimeout(() => {
 		overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 		overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)";
 		overlayContext.lineWidth = 2;
 		overlayContext.setLineDash([5, 5]);
-		overlayContext.strokeRect(selectionX1 * pixelSize, selectionY1 * pixelSize, clipboardWidth * pixelSize, clipboardHeight * pixelSize);
+		overlayContext.strokeRect(displayX, displayY, displayWidth, displayHeight);
 		overlayContext.setLineDash([]);
 	}, 200);
 };
@@ -331,28 +336,23 @@ const drawPastePreview = () => {
 	const tempContext = tempCanvas.getContext('2d');
 	tempContext.putImageData(clipboard, 0, 0);
 	
+	// Calculate display dimensions
+	const displayWidth = clipboardWidth * pixelSize;
+	const displayHeight = clipboardHeight * pixelSize;
+	const displayX = pasteX * pixelSize;
+	const displayY = pasteY * pixelSize;
+	
 	// Draw the clipboard content at the current paste position on overlay
 	overlayContext.globalAlpha = 0.7;
 	overlayContext.imageSmoothingEnabled = false;
-	overlayContext.drawImage(
-		tempCanvas,
-		pasteX * pixelSize,
-		pasteY * pixelSize,
-		clipboardWidth * pixelSize,
-		clipboardHeight * pixelSize
-	);
+	overlayContext.drawImage(tempCanvas, displayX, displayY, displayWidth, displayHeight);
 	overlayContext.globalAlpha = 1.0;
 	
 	// Draw border around paste area
 	overlayContext.strokeStyle = "rgba(0, 255, 0, 0.8)";
 	overlayContext.lineWidth = 2;
 	overlayContext.setLineDash([5, 5]);
-	overlayContext.strokeRect(
-		pasteX * pixelSize,
-		pasteY * pixelSize,
-		clipboardWidth * pixelSize,
-		clipboardHeight * pixelSize
-	);
+	overlayContext.strokeRect(displayX, displayY, displayWidth, displayHeight);
 	overlayContext.setLineDash([]);
 };
 
@@ -1031,16 +1031,17 @@ const mouseControl = (e, eventType) => {
 		// Clear the overlay canvas
 		overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 		
+		// Calculate selection bounds (inclusive of both start and end pixels)
+		const rectX = Math.min(toolStartX, mouseX) * pixelSize;
+		const rectY = Math.min(toolStartY, mouseY) * pixelSize;
+		const rectWidth = (Math.abs(mouseX - toolStartX) + 1) * pixelSize;
+		const rectHeight = (Math.abs(mouseY - toolStartY) + 1) * pixelSize;
+		
 		// Draw selection rectangle
 		overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)"; // Blue with some transparency
 		overlayContext.lineWidth = 2;
 		overlayContext.setLineDash([5, 5]); // Dashed line
-		overlayContext.strokeRect(
-			toolStartX * pixelSize,
-			toolStartY * pixelSize,
-			(mouseX - toolStartX) * pixelSize,
-			(mouseY - toolStartY) * pixelSize
-		);
+		overlayContext.strokeRect(rectX, rectY, rectWidth, rectHeight);
 		overlayContext.setLineDash([]); // Reset dash
 	}
 	
