@@ -219,6 +219,34 @@ const drawCircle = () => setActiveTool('circle');
 const fill = () => setActiveTool('fill');
 const select = () => setActiveTool('select');
 
+// Select All function
+const selectAll = () => {
+	// Switch to select tool
+	setActiveTool('select');
+	
+	// Select entire canvas
+	selectionX1 = 0;
+	selectionY1 = 0;
+	selectionX2 = gridSize - 1;
+	selectionY2 = gridSize - 1;
+	hasSelection = true;
+	
+	// Draw selection rectangle on overlay
+	overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+	overlayContext.strokeStyle = "rgba(0, 0, 255, 0.8)";
+	overlayContext.lineWidth = 2;
+	overlayContext.setLineDash([5, 5]);
+	overlayContext.strokeRect(
+		0,
+		0,
+		gridSize * pixelSize,
+		gridSize * pixelSize
+	);
+	overlayContext.setLineDash([]);
+	
+	console.log('Selected all');
+};
+
 // Clipboard operations
 const copy = () => {
 	// Check if there's an active or completed selection
@@ -1203,13 +1231,18 @@ const init = () => {
 	canvas.addEventListener("mouseout", function (e) { mouseControl(e,"out") }, false);
 	canvas.addEventListener("mouseover", function (e) { mouseControl(e,"over") }, false);
 	
-	// Add keyboard shortcuts for copy/cut/paste/flip
+	// Add keyboard shortcuts for copy/cut/paste/flip/select all
 	document.addEventListener("keydown", function(e) {
 		// Check for Cmd (Mac) or Ctrl (Windows/Linux)
 		const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 		
 		if (isCmdOrCtrl) {
 			switch(e.key.toLowerCase()) {
+				case 'a':
+					// Select All
+					e.preventDefault();
+					selectAll();
+					break;
 				case 'c':
 					// Copy
 					e.preventDefault();
